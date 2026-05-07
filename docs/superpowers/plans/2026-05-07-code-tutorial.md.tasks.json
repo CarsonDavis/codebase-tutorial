@@ -1,0 +1,124 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-07-code-tutorial.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 0: Bootstrap Next.js 15 app",
+      "status": "pending",
+      "description": "**Goal:** Project scaffolds, dev server runs at :3005, dark-themed placeholder home page renders.\n\n**Files:** package.json, tsconfig.json, next.config.ts, postcss.config.mjs, .gitignore, README.md, app/layout.tsx, app/globals.css, app/page.tsx\n\n**Verify:** `npm run typecheck && curl -sI http://localhost:3005 | head -1`\n\n```json:metadata\n{\"files\":[\"package.json\",\"tsconfig.json\",\"next.config.ts\",\"postcss.config.mjs\",\".gitignore\",\"README.md\",\"app/layout.tsx\",\"app/globals.css\",\"app/page.tsx\"],\"verifyCommand\":\"npm run typecheck && curl -sI http://localhost:3005 | head -1\",\"acceptanceCriteria\":[\"npm install succeeds\",\"typecheck passes\",\"dev server on 3005\",\"home page renders dark theme\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 1: Tutorial schema types and example fixture",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Lock down the data contract in TypeScript and seed public/tutorials/example-repo/.\n\n**Files:** lib/types.ts, public/tutorials/example-repo/{tutorial.yaml, intro.md, components/...}\n\n**Verify:** `npm run typecheck`\n\n```json:metadata\n{\"files\":[\"lib/types.ts\",\"public/tutorials/example-repo/tutorial.yaml\",\"public/tutorials/example-repo/intro.md\",\"public/tutorials/example-repo/components/backend/index.md\",\"public/tutorials/example-repo/components/iac/index.md\",\"public/tutorials/example-repo/components/frontend/index.md\",\"public/tutorials/example-repo/components/frontend/routing.md\",\"public/tutorials/example-repo/components/frontend/state-management.md\"],\"verifyCommand\":\"npm run typecheck\",\"acceptanceCriteria\":[\"types defined\",\"fixture covers atomic + subdivided\",\"typecheck passes\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 2: Tutorial loader with Vitest tests",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** discoverTutorials, loadTutorial, loadIntro, loadSection — TDD with Vitest.\n\n**Files:** package.json (vitest, js-yaml, gray-matter), vitest.config.ts, lib/tutorials.ts, lib/tutorials.test.ts\n\n**Verify:** `npm test`\n\n```json:metadata\n{\"files\":[\"package.json\",\"vitest.config.ts\",\"lib/tutorials.ts\",\"lib/tutorials.test.ts\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"discoverTutorials\",\"loadTutorial\",\"loadIntro\",\"loadSection atomic+subdivided\",\"clear errors on missing\",\"all tests pass\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 3: Server-side markdown rendering with Shiki",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** renderMarkdown(body, ctx) → {html, toc}. Shiki highlighting; relative .md links rewritten.\n\n**Files:** package.json (unified, remark-*, rehype-*, @shikijs/rehype, unist-util-visit), lib/markdown.ts, lib/markdown.test.ts, components/MarkdownBody.tsx\n\n**Verify:** `npm test -- markdown`\n\n```json:metadata\n{\"files\":[\"package.json\",\"lib/markdown.ts\",\"lib/markdown.test.ts\",\"components/MarkdownBody.tsx\"],\"verifyCommand\":\"npm test -- markdown\",\"acceptanceCriteria\":[\"html+toc returned\",\"Shiki highlighting\",\"relative .md links rewritten\",\"absolute links untouched\",\"TOC h2/h3\",\"tests pass\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 4: Tutorial library home page",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "**Goal:** / shows card grid for each tutorial under public/tutorials/.\n\n**Files:** app/page.tsx, components/TutorialCard.tsx\n\n**Verify:** Visit http://localhost:3005/, see card linking to /t/example-repo/.\n\n```json:metadata\n{\"files\":[\"app/page.tsx\",\"components/TutorialCard.tsx\"],\"verifyCommand\":\"manual: visit http://localhost:3005/\",\"acceptanceCriteria\":[\"card per tutorial\",\"title/summary/date\",\"links to /t/<slug>/\",\"sorted by generatedAt desc\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 5: Tutorial shell layout with left nav",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Persistent shell at /t/[slug]/* with left sidebar component tree.\n\n**Files:** app/t/[slug]/layout.tsx, components/TutorialNav.tsx (client component)\n\n**Verify:** Visit /t/example-repo/, sidebar shows Backend/Infrastructure/Frontend (with Routing+State management nested).\n\n```json:metadata\n{\"files\":[\"app/t/[slug]/layout.tsx\",\"components/TutorialNav.tsx\"],\"verifyCommand\":\"manual: visit /t/example-repo/\",\"acceptanceCriteria\":[\"shell on all /t/[slug]/* routes\",\"components listed\",\"sub-sections nested\",\"current entry highlighted\",\"back link\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 6: Tutorial overview page",
+      "status": "pending",
+      "blockedBy": [6],
+      "description": "**Goal:** /t/[slug]/ renders intro.md plus styled component index.\n\n**Files:** app/t/[slug]/page.tsx\n\n**Verify:** Visit /t/example-repo/.\n\n```json:metadata\n{\"files\":[\"app/t/[slug]/page.tsx\"],\"verifyCommand\":\"manual: visit /t/example-repo/\",\"acceptanceCriteria\":[\"intro.md renders\",\"component list shown\",\"links work\",\"404 on unknown slug\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 7: Component page",
+      "status": "pending",
+      "blockedBy": [7],
+      "description": "**Goal:** /t/[slug]/[component]/ renders index.md, lists sub-sections if subdivided.\n\n**Files:** app/t/[slug]/[component]/page.tsx\n\n**Verify:** Visit /t/example-repo/backend/ and /t/example-repo/frontend/.\n\n```json:metadata\n{\"files\":[\"app/t/[slug]/[component]/page.tsx\"],\"verifyCommand\":\"manual: visit /t/example-repo/backend/\",\"acceptanceCriteria\":[\"index.md renders\",\"sub-section list\",\"static params\",\"404 on unknown\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 8: Sub-section page",
+      "status": "pending",
+      "blockedBy": [8],
+      "description": "**Goal:** /t/[slug]/[component]/[sub]/ renders sub-section markdown.\n\n**Files:** app/t/[slug]/[component]/[sub]/page.tsx\n\n**Verify:** Visit /t/example-repo/frontend/routing/.\n\n```json:metadata\n{\"files\":[\"app/t/[slug]/[component]/[sub]/page.tsx\"],\"verifyCommand\":\"manual: visit /t/example-repo/frontend/routing/\",\"acceptanceCriteria\":[\"sub.md renders\",\"static params triples\",\"404 on unknown\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 9: Cross-references — Related footer + path helpers",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** Each section page ends with Related footer combining frontmatter.related + tutorial.cross_refs.\n\n**Files:** lib/paths.ts, components/RelatedFooter.tsx, app/t/[slug]/[component]/page.tsx, app/t/[slug]/[component]/[sub]/page.tsx\n\n**Verify:** Visit /t/example-repo/backend/ and /t/example-repo/iac/.\n\n```json:metadata\n{\"files\":[\"lib/paths.ts\",\"components/RelatedFooter.tsx\",\"app/t/[slug]/[component]/page.tsx\",\"app/t/[slug]/[component]/[sub]/page.tsx\"],\"verifyCommand\":\"manual: visit /t/example-repo/backend/\",\"acceptanceCriteria\":[\"de-duped\",\"frontmatter related\",\"cross_refs from-match\",\"right routes\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 10: In-page TOC",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "**Goal:** Right-column auto-TOC (h2/h3). Hidden < lg.\n\n**Files:** components/PageToc.tsx, app/t/[slug]/page.tsx, app/t/[slug]/[component]/page.tsx, app/t/[slug]/[component]/[sub]/page.tsx\n\n**Verify:** Visit page with multiple h2/h3.\n\n```json:metadata\n{\"files\":[\"components/PageToc.tsx\",\"app/t/[slug]/page.tsx\",\"app/t/[slug]/[component]/page.tsx\",\"app/t/[slug]/[component]/[sub]/page.tsx\"],\"verifyCommand\":\"manual: visit a section page\",\"acceptanceCriteria\":[\"PageToc anchor links\",\"empty when no headings\",\"hidden < lg\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 11: AGENTS.md — agent contract",
+      "status": "pending",
+      "blockedBy": [11],
+      "description": "**Goal:** Single canonical doc at repo root: pipeline, schemas, tone rules.\n\n**Files:** AGENTS.md\n\n**Verify:** Manual review.\n\n```json:metadata\n{\"files\":[\"AGENTS.md\"],\"verifyCommand\":\"manual review\",\"acceptanceCriteria\":[\"covers stages\",\"schemas\",\"tone rules\",\"references spec\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 12: Survey agent definition",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "**Goal:** agents/survey.md prompt that produces survey.yaml.\n\n**Files:** agents/survey.md\n\n**Verify:** Run on /Users/cdavis/github/code-explainer; inspect survey.yaml.\n\n```json:metadata\n{\"files\":[\"agents/survey.md\"],\"verifyCommand\":\"manual: run on code-explainer\",\"acceptanceCriteria\":[\"complete agent file\",\"references AGENTS.md\",\"manual run produces valid survey\"]}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Task 13: Writer agent definition",
+      "status": "pending",
+      "blockedBy": [13],
+      "description": "**Goal:** agents/writer.md prompt that produces one valid leaf markdown file.\n\n**Files:** agents/writer.md\n\n**Verify:** Run on a code-explainer leaf; read as a stranger.\n\n```json:metadata\n{\"files\":[\"agents/writer.md\"],\"verifyCommand\":\"manual: run on one leaf\",\"acceptanceCriteria\":[\"complete agent file\",\"frontmatter spec\",\"manual run useful\"]}\n```"
+    },
+    {
+      "id": 15,
+      "subject": "Task 14: Synthesizer agent definition",
+      "status": "pending",
+      "blockedBy": [14],
+      "description": "**Goal:** agents/synthesizer.md produces intro.md, subdivided index.md, final tutorial.yaml.\n\n**Files:** agents/synthesizer.md\n\n**Verify:** Run after stages 1+2; inspect outputs.\n\n```json:metadata\n{\"files\":[\"agents/synthesizer.md\"],\"verifyCommand\":\"manual: after stages 1+2\",\"acceptanceCriteria\":[\"complete agent file\",\"intro.md spec\",\"bridge spec\",\"tutorial.yaml finalize\",\"cross_refs harvest\"]}\n```"
+    },
+    {
+      "id": 16,
+      "subject": "Task 15: Orchestrator slash command",
+      "status": "pending",
+      "blockedBy": [15],
+      "description": "**Goal:** Slash command at .claude/commands/build-tutorial.md driving 3 stages with parallel writers.\n\n**Files:** .claude/commands/build-tutorial.md\n\n**Verify:** Run on a small real repo end-to-end.\n\n```json:metadata\n{\"files\":[\".claude/commands/build-tutorial.md\"],\"verifyCommand\":\"manual: run /build-tutorial\",\"acceptanceCriteria\":[\"takes inputs\",\"stage 1 with approval\",\"parallel stage 2\",\"stage 3\",\"verify between stages\",\"final report\"]}\n```"
+    },
+    {
+      "id": 17,
+      "subject": "Task 16: End-to-end smoke test",
+      "status": "pending",
+      "blockedBy": [16],
+      "description": "**Goal:** Run pipeline on /Users/cdavis/github/code-explainer; walk result; refine prompts.\n\n**Files:** May modify agents/*.md, AGENTS.md, public/tutorials/<slug>/.\n\n**Verify:** Manual walkthrough — open ≥3 pages, click 2 cross-refs, judge usefulness.\n\n```json:metadata\n{\"files\":[\"agents/survey.md\",\"agents/writer.md\",\"agents/synthesizer.md\",\"AGENTS.md\"],\"verifyCommand\":\"manual: full walkthrough\",\"acceptanceCriteria\":[\"pipeline runs end-to-end\",\"tutorial loads\",\"navigation works\",\"cross-refs work\",\"prompt refinements committed\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-07T00:00:00Z"
+}
