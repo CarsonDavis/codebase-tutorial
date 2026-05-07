@@ -11,7 +11,7 @@ export interface Component {
   title: string;
   summary: string;
   type: ComponentType;
-  subSections?: SubSection[];
+  subSections?: SubSection[];   // present only when type === "subdivided"; sub-sections are implicitly atomic
 }
 
 export interface CrossRef {
@@ -32,7 +32,7 @@ export interface Tutorial {
 }
 
 export interface SectionFrontmatter {
-  id: string;            // "<component>" or "<component>/<sub>"
+  id: string;            // "intro" | "<component>" | "<component>/<sub>"
   title: string;
   summary: string;
   related?: string[];
