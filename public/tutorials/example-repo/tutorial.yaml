@@ -1,0 +1,38 @@
+slug: example-repo
+name: Example Repo
+source:
+  path: /Users/cdavis/github/example-repo
+generated_at: "2026-05-07T12:00:00Z"
+generator_version: "0.1.0"
+summary: |
+  A small reference web app with a Node backend, a React frontend, and AWS infrastructure
+  defined in CDK. This tutorial is a hand-written fixture used for developing the viewer.
+
+components:
+  - id: backend
+    title: Backend
+    summary: Node/Express API server with a Postgres data layer.
+    type: atomic
+  - id: iac
+    title: Infrastructure
+    summary: AWS CDK stacks for the API, database, and static hosting.
+    type: atomic
+  - id: frontend
+    title: Frontend
+    summary: React SPA with file-based routing and a small global store.
+    type: subdivided
+    sub_sections:
+      - id: routing
+        title: Routing
+        summary: How pages are organized and how navigation flows.
+      - id: state-management
+        title: State management
+        summary: The global store, when to use it, and how it talks to the API.
+
+cross_refs:
+  - from: frontend/state-management
+    to: backend
+    note: The store hits the API endpoints exposed here.
+  - from: iac
+    to: backend
+    note: The API stack provisions the runtime for the backend.
