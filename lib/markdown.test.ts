@@ -76,4 +76,29 @@ describe("renderMarkdown — TOC", () => {
     });
     expect(toc).toEqual([]);
   });
+
+  it("extracts heading text from inline markup (emphasis, code, links)", async () => {
+    const body = `## *Emphasized* heading\n\n### Plain \`code\` here\n`;
+    const { toc } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(toc).toEqual([
+      { depth: 2, text: "Emphasized heading", slug: "emphasized-heading" },
+      { depth: 3, text: "Plain code here", slug: "plain-code-here" },
+    ]);
+  });
+
+  it("uses github-slugger so toc slugs match rendered heading ids", async () => {
+    const body = `## API & SDK\n`;
+    const { html, toc } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(toc).toHaveLength(1);
+    // The toc slug must match the actual id rehype-slug rendered into the HTML.
+    const idMatch = html.match(/<h2 id="([^"]+)">/);
+    expect(idMatch).not.toBeNull();
+    expect(toc[0].slug).toBe(idMatch![1]);
+  });
 });

@@ -6,6 +6,8 @@ import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
 import rehypeShiki from "@shikijs/rehype";
 import { visit } from "unist-util-visit";
+import GithubSlugger from "github-slugger";
+import { toString as mdastToString } from "mdast-util-to-string";
 import type { Root as MdastRoot } from "mdast";
 import type { TocEntry } from "./types";
 
@@ -37,9 +39,8 @@ export async function renderMarkdown(
     .use(rehypeStringify)
     .process(body);
 
-  // rehype-slug computes slugs from heading text using github-slugger.
-  // We mirror that algorithm here so the toc.slug values match the actual id="" attributes.
-  const toc = tocCollector.map((entry) => ({ ...entry, slug: githubSlug(entry.text) }));
+  const slugger = new GithubSlugger();
+  const toc = tocCollector.map((entry) => ({ ...entry, slug: slugger.slug(entry.text) }));
 
   return { html: String(file), toc };
 }
@@ -89,23 +90,9 @@ function collectHeadings(toc: TocEntry[]) {
   return () => (tree: MdastRoot) => {
     visit(tree, "heading", (node) => {
       if (node.depth !== 2 && node.depth !== 3) return;
-      const text = node.children
-        .map((c) => ("value" in c ? c.value : ""))
-        .join("")
-        .trim();
+      const text = mdastToString(node).trim();
       if (!text) return;
       toc.push({ depth: node.depth, text, slug: "" }); // slug filled later
     });
   };
-}
-
-// Mirror github-slugger's algorithm closely enough for our headings.
-// Lowercase, strip punctuation other than letters/numbers/spaces/dashes,
-// then collapse whitespace to single dashes.
-function githubSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}\s-]/gu, "")
-    .trim()
-    .replace(/\s+/g, "-");
 }
