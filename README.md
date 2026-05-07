@@ -9,4 +9,4 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3005.
+Then open http://localhost:3006.

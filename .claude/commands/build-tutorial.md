@@ -68,7 +68,7 @@ Print a summary to the user:
 - Tutorial slug.
 - Number of components, of which N subdivided.
 - Total number of leaf pages written.
-- The viewer URL: `http://localhost:3005/t/<SLUG>/`.
+- The viewer URL: `http://localhost:3006/t/<SLUG>/`.
 
 Suggest: `npm run dev` (if not already running) and open the URL.
 
