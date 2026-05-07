@@ -4,3 +4,14 @@ out
 *.tsbuildinfo
 .DS_Store
 .env*.local
+
+# CDK
+cdk/.venv/
+cdk/cdk.out/
+cdk/cdk.context.json
+cdk/outputs.json
+cdk/__pycache__/
+cdk/**/__pycache__/
+
+# Tutorials sourced from private repos — keep locally, never commit.
+public/tutorials/mmgis/

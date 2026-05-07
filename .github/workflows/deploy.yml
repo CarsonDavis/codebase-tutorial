@@ -1,0 +1,89 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve AWS account ID
+        id: account
+        run: |
+          echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      # ── App build ─────────────────────────────────────────────
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Next.js static export
+        env:
+          # Only this list of tutorials ships to production. mmgis is gitignored
+          # (private source repo), example-repo is a dev fixture used in tests.
+          TUTORIAL_ALLOWLIST: code-explainer
+        run: npm run build
+
+      # ── CDK deploy ────────────────────────────────────────────
+      - name: Install CDK deps
+        working-directory: cdk
+        run: uv venv && uv pip install -r requirements.txt
+
+      - name: CDK deploy
+        working-directory: cdk
+        env:
+          # Site-specific values come from repo variables so this workflow
+          # stays generic. SITE_DOMAIN must be set before the first deploy.
+          # SITE_SUBDOMAIN is optional (defaults to "codebase-tutorial.<domain>").
+          CDK_DEFAULT_ACCOUNT: ${{ steps.account.outputs.id }}
+          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+          SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+          SITE_SUBDOMAIN: ${{ vars.SITE_SUBDOMAIN }}
+          SITE_GITHUB_ORG: ${{ github.repository_owner }}
+          SITE_GITHUB_REPO: ${{ github.event.repository.name }}
+        run: npx cdk deploy --require-approval never --outputs-file outputs.json
+
+      - name: Extract stack outputs
+        id: outputs
+        working-directory: cdk
+        run: |
+          echo "bucket=$(jq -r '.CodebaseTutorialStack.SiteBucketName' outputs.json)" >> "$GITHUB_OUTPUT"
+          echo "distribution=$(jq -r '.CodebaseTutorialStack.DistributionId' outputs.json)" >> "$GITHUB_OUTPUT"
+
+      # ── Sync + invalidate ─────────────────────────────────────
+      - name: Sync out/ to S3
+        run: aws s3 sync out/ "s3://${{ steps.outputs.outputs.bucket }}/" --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.outputs.outputs.distribution }}" \
+            --paths "/*"

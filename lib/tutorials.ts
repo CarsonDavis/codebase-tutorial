@@ -21,6 +21,15 @@ export async function discoverTutorials(rootDir: string): Promise<string[]> {
       // Skip incomplete tutorials.
     }
   }
+  // Optional allowlist for production builds. Local dev leaves it unset so
+  // every tutorial dir on disk shows up, including hand-written fixtures.
+  const allowlist = (process.env.TUTORIAL_ALLOWLIST ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allowlist.length > 0) {
+    return slugs.filter((s) => allowlist.includes(s));
+  }
   return slugs;
 }
 

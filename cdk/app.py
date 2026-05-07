@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""CDK app entry point.
+
+All site-specific values come from environment variables so this code stays
+generic. Required:
+
+    CDK_DEFAULT_ACCOUNT     AWS account ID (set automatically by AWS CLI/SDK
+                            when a profile is configured, or by the deploy
+                            workflow via `aws sts get-caller-identity`).
+    SITE_DOMAIN             Apex domain whose Route 53 hosted zone you own
+                            (e.g. "example.com").
+    SITE_GITHUB_ORG         GitHub organization or username that owns the
+                            forked repo.
+    SITE_GITHUB_REPO        Forked repo name (e.g. "codebase-tutorial").
+
+Optional:
+
+    CDK_DEFAULT_REGION      Defaults to us-east-1 (required for CloudFront).
+    SITE_SUBDOMAIN          Defaults to "codebase-tutorial.<SITE_DOMAIN>".
+"""
+
+import os
+import sys
+
+import aws_cdk as cdk
+
+from stacks.codebase_tutorial_stack import CodebaseTutorialStack
+
+
+def _required(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        sys.exit(
+            f"{name} is not set. See cdk/app.py for the full list of required "
+            "deploy environment variables."
+        )
+    return value
+
+
+def _optional(name: str, default: str) -> str:
+    return os.environ.get(name) or default
+
+
+app = cdk.App()
+
+ACCOUNT = _required("CDK_DEFAULT_ACCOUNT")
+REGION = _optional("CDK_DEFAULT_REGION", "us-east-1")
+DOMAIN = _required("SITE_DOMAIN")
+SUBDOMAIN = _optional("SITE_SUBDOMAIN", f"codebase-tutorial.{DOMAIN}")
+GITHUB_ORG = _required("SITE_GITHUB_ORG")
+GITHUB_REPO = _required("SITE_GITHUB_REPO")
+
+CodebaseTutorialStack(
+    app,
+    "CodebaseTutorialStack",
+    env=cdk.Environment(account=ACCOUNT, region=REGION),
+    domain=DOMAIN,
+    subdomain=SUBDOMAIN,
+    github_org=GITHUB_ORG,
+    github_repo=GITHUB_REPO,
+)
+
+app.synth()
