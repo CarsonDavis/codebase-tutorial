@@ -1,4 +1,4 @@
-# Code Tutorial — Vision
+# Codebase Tutorial — Vision
 
 ## What we're building
 
