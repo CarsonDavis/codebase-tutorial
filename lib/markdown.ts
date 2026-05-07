@@ -60,13 +60,17 @@ function rewriteRelativeLinks(ctx: RenderContext) {
 }
 
 function resolveRelativeMd(href: string, ctx: RenderContext): string {
-  // Compute the current page's path within the tutorial.
-  // Two shapes:
-  //   components/<component>/index.md          (no sub)
-  //   components/<component>/<sub>.md          (with sub)
-  const currentParts = ctx.currentSub
-    ? ["components", ctx.currentComponent, `${ctx.currentSub}.md`]
-    : ["components", ctx.currentComponent, "index.md"];
+  // Compute the current page's path within the tutorial. Three shapes:
+  //   intro.md                                 (top-level intro page)
+  //   components/<component>/index.md          (component-level)
+  //   components/<component>/<sub>.md          (sub-section)
+  // The overview page passes currentComponent: "intro" as a sentinel.
+  const currentParts =
+    ctx.currentComponent === "intro"
+      ? ["intro.md"]
+      : ctx.currentSub
+        ? ["components", ctx.currentComponent, `${ctx.currentSub}.md`]
+        : ["components", ctx.currentComponent, "index.md"];
 
   // Drop the file name; we'll resolve relative to the directory.
   const segments = currentParts.slice(0, -1);

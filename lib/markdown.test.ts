@@ -31,6 +31,16 @@ describe("renderMarkdown — link rewriting", () => {
     expect(html).toContain('href="https://anthropic.com"');
   });
 
+  it("rewrites .md links from the intro page (top-level) into component routes", async () => {
+    const body = `[viewer](./components/viewer/index.md) and [diff](./components/viewer/diff-rendering.md)`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "intro",
+    });
+    expect(html).toContain('href="/t/example/viewer/"');
+    expect(html).toContain('href="/t/example/viewer/diff-rendering/"');
+  });
+
   it("leaves hash links and root-relative links untouched", async () => {
     const body = `[h](#somewhere) and [r](/elsewhere)`;
     const { html } = await renderMarkdown(body, {
