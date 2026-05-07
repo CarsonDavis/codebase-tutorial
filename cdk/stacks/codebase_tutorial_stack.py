@@ -61,9 +61,30 @@ class CodebaseTutorialStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
-        # Static export with `trailingSlash: true` emits real index.html
-        # files at directory paths (out/index.html, out/t/<slug>/index.html),
-        # so no viewer-request rewrite function is needed.
+        # Static export with `trailingSlash: true` emits index.html at directory
+        # paths (out/index.html, out/t/<slug>/index.html). CloudFront's S3 OAC
+        # origin does NOT auto-resolve directory requests, so we rewrite paths
+        # ending in `/` to `<path>/index.html` at the edge.
+        uri_rewrite_fn = cloudfront.Function(
+            self,
+            "UriRewrite",
+            code=cloudfront.FunctionCode.from_inline(
+                """
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+    if (uri.endsWith('/')) {
+        request.uri = uri + 'index.html';
+    } else if (!uri.split('/').pop().includes('.')) {
+        request.uri = uri + '/index.html';
+    }
+    return request;
+}
+""".strip()
+            ),
+            runtime=cloudfront.FunctionRuntime.JS_2_0,
+        )
+
         distribution = cloudfront.Distribution(
             self,
             "SiteDistribution",
@@ -72,22 +93,31 @@ class CodebaseTutorialStack(Stack):
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 compress=True,
                 response_headers_policy=cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+                function_associations=[
+                    cloudfront.FunctionAssociation(
+                        function=uri_rewrite_fn,
+                        event_type=cloudfront.FunctionEventType.VIEWER_REQUEST,
+                    ),
+                ],
             ),
             domain_names=[subdomain],
             certificate=certificate,
             default_root_object="index.html",
             minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
             error_responses=[
+                # Real 404s show the Next.js 404 page (not the home page —
+                # masking missing routes as a 200 home is bad UX). S3 with OAC
+                # returns 403 for non-existent keys, so map both.
                 cloudfront.ErrorResponse(
                     http_status=403,
-                    response_http_status=200,
-                    response_page_path="/index.html",
+                    response_http_status=404,
+                    response_page_path="/404.html",
                     ttl=Duration.seconds(0),
                 ),
                 cloudfront.ErrorResponse(
                     http_status=404,
-                    response_http_status=200,
-                    response_page_path="/index.html",
+                    response_http_status=404,
+                    response_page_path="/404.html",
                     ttl=Duration.seconds(0),
                 ),
             ],
