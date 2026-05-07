@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import yaml from "js-yaml";
 import matter from "gray-matter";
-import type { Tutorial, Component, SectionFrontmatter } from "./types";
+import type { Tutorial, Component, CrossRef, SectionFrontmatter } from "./types";
 
 export async function discoverTutorials(rootDir: string): Promise<string[]> {
   const entries = await fs.readdir(rootDir, { withFileTypes: true });
@@ -69,8 +69,21 @@ function normalizeTutorial(raw: Record<string, unknown>, slug: string): Tutorial
     generatorVersion: raw.generator_version ? String(raw.generator_version) : undefined,
     source: raw.source as Tutorial["source"],
     components: components.map(normalizeComponent),
-    crossRefs: (raw.cross_refs as Tutorial["crossRefs"]) ?? undefined,
+    crossRefs: normalizeCrossRefs(raw.cross_refs),
   };
+}
+
+function normalizeCrossRefs(raw: unknown): CrossRef[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw.map((r): CrossRef => {
+    const item = r as Record<string, unknown>;
+    const cr: CrossRef = {
+      from: String(item.from),
+      to: String(item.to),
+    };
+    if (item.note !== undefined) cr.note = String(item.note);
+    return cr;
+  });
 }
 
 function normalizeComponent(raw: Record<string, unknown>): Component {

@@ -30,6 +30,22 @@ describe("loadTutorial", () => {
   it("throws a clear error when the tutorial is missing", async () => {
     await expect(loadTutorial(ROOT, "no-such-slug")).rejects.toThrow(/no-such-slug/);
   });
+
+  it("normalizes cross_refs into camelCase entries", async () => {
+    const t = await loadTutorial(ROOT, "example-repo");
+    expect(t.crossRefs).toEqual([
+      {
+        from: "frontend/state-management",
+        to: "backend",
+        note: "The store hits the API endpoints exposed here.",
+      },
+      {
+        from: "iac",
+        to: "backend",
+        note: "The API stack provisions the runtime for the backend.",
+      },
+    ]);
+  });
 });
 
 describe("loadIntro", () => {
