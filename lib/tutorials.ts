@@ -6,10 +6,22 @@ import type { Tutorial, Component, CrossRef, SectionFrontmatter } from "./types"
 
 export async function discoverTutorials(rootDir: string): Promise<string[]> {
   const entries = await fs.readdir(rootDir, { withFileTypes: true });
-  return entries
+  const candidates = entries
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
     .sort();
+  // A directory is a "tutorial" only once tutorial.yaml exists. Survey-only
+  // directories are mid-pipeline and should not appear in the library.
+  const slugs: string[] = [];
+  for (const name of candidates) {
+    try {
+      await fs.access(path.join(rootDir, name, "tutorial.yaml"));
+      slugs.push(name);
+    } catch {
+      // Skip incomplete tutorials.
+    }
+  }
+  return slugs;
 }
 
 export async function loadTutorial(rootDir: string, slug: string): Promise<Tutorial> {

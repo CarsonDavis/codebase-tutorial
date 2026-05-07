@@ -14,6 +14,21 @@ describe("discoverTutorials", () => {
     const slugs = await discoverTutorials(ROOT);
     expect(slugs).toContain("example-repo");
   });
+
+  it("skips directories without a tutorial.yaml (mid-pipeline)", async () => {
+    const tmpRoot = path.join(ROOT, "..", "tmp-tutorials-test");
+    const fs = await import("node:fs/promises");
+    await fs.rm(tmpRoot, { recursive: true, force: true });
+    await fs.mkdir(path.join(tmpRoot, "complete"), { recursive: true });
+    await fs.mkdir(path.join(tmpRoot, "survey-only"), { recursive: true });
+    await fs.writeFile(path.join(tmpRoot, "complete", "tutorial.yaml"), "slug: complete\n");
+    await fs.writeFile(path.join(tmpRoot, "survey-only", "survey.yaml"), "slug: survey-only\n");
+
+    const slugs = await discoverTutorials(tmpRoot);
+
+    await fs.rm(tmpRoot, { recursive: true, force: true });
+    expect(slugs).toEqual(["complete"]);
+  });
 });
 
 describe("loadTutorial", () => {
