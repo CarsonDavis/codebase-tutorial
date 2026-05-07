@@ -8,6 +8,7 @@ import {
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
 import { RelatedFooter } from "@/components/RelatedFooter";
+import { PageToc } from "@/components/PageToc";
 import { relatedFor } from "@/lib/paths";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
@@ -40,18 +41,23 @@ export default async function SubSectionPage({ params }: Props) {
     notFound();
   }
 
-  const { html } = await renderMarkdown(section.body, {
+  const { html, toc } = await renderMarkdown(section.body, {
     slug,
     currentComponent: component,
     currentSub: sub,
   });
 
   return (
-    <article>
-      <MarkdownBody html={html} />
-      <RelatedFooter
-        items={relatedFor(tutorial, `${component}/${sub}`, section.frontmatter.related)}
-      />
-    </article>
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_14rem]">
+      <article>
+        <MarkdownBody html={html} />
+        <RelatedFooter
+          items={relatedFor(tutorial, `${component}/${sub}`, section.frontmatter.related)}
+        />
+      </article>
+      <aside className="sticky top-10 hidden self-start lg:block">
+        <PageToc items={toc} />
+      </aside>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { discoverTutorials, loadTutorial, loadIntro } from "@/lib/tutorials";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
+import { PageToc } from "@/components/PageToc";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
 
@@ -25,31 +26,36 @@ export default async function TutorialOverview({ params }: Props) {
   } catch {
     notFound();
   }
-  const { html } = await renderMarkdown(intro.body, {
+  const { html, toc } = await renderMarkdown(intro.body, {
     slug,
     currentComponent: "intro",
   });
 
   return (
-    <article>
-      <MarkdownBody html={html} />
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_14rem]">
+      <article>
+        <MarkdownBody html={html} />
 
-      <section className="mt-12 border-t border-[var(--color-border)] pt-8">
-        <h2 className="text-xl font-semibold tracking-tight">Components</h2>
-        <ul className="mt-4 space-y-3">
-          {tutorial.components.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/t/${slug}/${c.id}/`}
-                className="block rounded-md border border-[var(--color-border)] p-4 transition-colors hover:border-[var(--color-accent)]"
-              >
-                <div className="font-medium">{c.title}</div>
-                <div className="mt-1 text-sm text-[var(--color-fg-muted)]">{c.summary}</div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </article>
+        <section className="mt-12 border-t border-[var(--color-border)] pt-8">
+          <h2 className="text-xl font-semibold tracking-tight">Components</h2>
+          <ul className="mt-4 space-y-3">
+            {tutorial.components.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/t/${slug}/${c.id}/`}
+                  className="block rounded-md border border-[var(--color-border)] p-4 transition-colors hover:border-[var(--color-accent)]"
+                >
+                  <div className="font-medium">{c.title}</div>
+                  <div className="mt-1 text-sm text-[var(--color-fg-muted)]">{c.summary}</div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </article>
+      <aside className="sticky top-10 hidden self-start lg:block">
+        <PageToc items={toc} />
+      </aside>
+    </div>
   );
 }
