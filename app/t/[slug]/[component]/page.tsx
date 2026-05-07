@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { discoverTutorials, loadTutorial, loadSection } from "@/lib/tutorials";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
+import { RelatedFooter } from "@/components/RelatedFooter";
+import { relatedFor } from "@/lib/paths";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
 
@@ -62,6 +64,10 @@ export default async function ComponentPage({ params }: Props) {
           </ul>
         </section>
       )}
+
+      <RelatedFooter
+        items={relatedFor(tutorial, component, section.frontmatter.related)}
+      />
     </article>
   );
 }

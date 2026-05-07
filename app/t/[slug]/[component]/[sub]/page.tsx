@@ -1,8 +1,14 @@
 import path from "node:path";
 import { notFound } from "next/navigation";
-import { discoverTutorials, loadTutorial, loadSection } from "@/lib/tutorials";
+import {
+  discoverTutorials,
+  loadTutorial,
+  loadSection,
+} from "@/lib/tutorials";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
+import { RelatedFooter } from "@/components/RelatedFooter";
+import { relatedFor } from "@/lib/paths";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
 
@@ -26,9 +32,10 @@ interface Props {
 export default async function SubSectionPage({ params }: Props) {
   const { slug, component, sub } = await params;
 
-  let section;
+  let section, tutorial;
   try {
     section = await loadSection(TUTORIALS_DIR, slug, component, sub);
+    tutorial = await loadTutorial(TUTORIALS_DIR, slug);
   } catch {
     notFound();
   }
@@ -42,6 +49,9 @@ export default async function SubSectionPage({ params }: Props) {
   return (
     <article>
       <MarkdownBody html={html} />
+      <RelatedFooter
+        items={relatedFor(tutorial, `${component}/${sub}`, section.frontmatter.related)}
+      />
     </article>
   );
 }
