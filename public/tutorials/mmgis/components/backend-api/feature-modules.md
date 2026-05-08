@@ -8,7 +8,7 @@ related:
   - adjacent-servers
 key_idea: Every backend feature is a directory with models/, routes/, setup.js — onceInit mounts routers behind guards from the shared "s" toolkit, and the same loader picks up *Plugin-Backend* directories without core changes.
 watch_out:
-  - Datasets uses Sequelize for the registry but Geodatasets drops to raw PostGIS for spatial queries — picking the wrong handle when adding a new query is the easy way to silently miss GiST indexes.
+  - Sequelize is the default handle and is used even for raw spatial SQL via `sequelize.query`. Draw is the lone module that reaches for pg-promise (`API/database.js`) — pick the handle by precedent, not feeling.
 seams_touched:
   - backend-postgres
   - plugin-drop

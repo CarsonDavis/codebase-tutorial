@@ -17,11 +17,11 @@ origin, so cross-origin only matters for iframe embedders that drive the
 [mmgisAPI](../components/frontend-essence/mmgis-api.md) from a parent page.
 
 ## backend-postgres
-Express to Postgres. Sequelize is the ORM for table definitions, model hooks, and the
-session store via `connect-pg-simple`. But spatial work — Geodatasets MVT generation,
-PostGIS GiST queries, ad-hoc geometry math — drops to raw SQL through `pg-promise`.
-Two handles, one database; remember which side of the seam you are on when you write a
-new query.
+Express to Postgres. Sequelize is the default handle — table definitions, model hooks,
+the session store via `connect-pg-simple`, and (importantly) raw spatial SQL too,
+issued via `sequelize.query`. The Draw module is the exception: it reaches for a
+`pg-promise` handle in `API/database.js`. Two handles, one database; check what the
+neighboring routes use before picking one.
 
 ## backend-adjacent-services
 Express to the optional Python sidecars (TiTiler, STAC, tipg, titiler-pgstac). The

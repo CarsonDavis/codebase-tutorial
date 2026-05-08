@@ -10,7 +10,7 @@ for a different mission. The historical Leaflet 1.x map handles slippy 2D missio
 UIs that expect a Leaflet API surface — and a decade of MMGIS code that assumed it.
 The deck.gl adapter is the in-flight migration target for high-feature-count layers
 and WebGL2 styling. The two share an `IMapEngine` facade so the rest of Essence does
-not care which is active, but hundreds of `if (Map_.engine.engineType !== LEAFLET)
+not care which is active, but a scattering of `if (Map_.engine.engineType !== LEAFLET)
 return` early-exits in `Map_.js` reveal that the migration is partial.
 
 ## Why a separate Configure SPA, not a panel inside Essence?
@@ -30,13 +30,14 @@ polyfills that the auto-shim used to add. Switching to Vite would mean reimpleme
 all of that — the cost is "every Essence build is now a custom config" and the team
 took it.
 
-## Why Sequelize for vector data and raw PostGIS for queries?
-Sequelize is a great ORM for table definitions, model hooks, and the session store.
-It is a poor fit for PostGIS spatial SQL — composing a `ST_Intersects` against a GiST
-index is friendlier as raw SQL than as a Sequelize expression. So MMGIS keeps two
-handles: a Sequelize instance in `API/connection.js` for ORM work, and a `pg-promise`
-handle in `API/database.js` for raw queries. New code uses the right tool for the job
-and ignores the other.
+## Why two database handles?
+Sequelize is a great ORM for table definitions, model hooks, and the session store. It
+is also fine for raw spatial SQL — most modules just call `sequelize.query` for their
+PostGIS work — so the codebase happily uses Sequelize for almost everything. The lone
+exception is the Draw module, which reaches for a `pg-promise` handle in
+`API/database.js`. So MMGIS keeps two handles: a Sequelize instance in
+`API/connection.js` for the bulk of the app, and a `pg-promise` handle for Draw. New
+code follows the precedent of its neighbors.
 
 ## Why is the test suite Playwright for *both* unit and e2e?
 The README still says Jest. The reality is that `tests/` migrated to Playwright so

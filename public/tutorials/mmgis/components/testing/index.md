@@ -17,9 +17,10 @@ prerequisites:
 
 ## One runner, two flavors
 
-The MMGIS test suite has consolidated on Playwright. `tests/README.md` notes the
-move off Jest — every spec file, fast or slow, is now executed by
-`@playwright/test`. That keeps the dependency surface small and lets unit and e2e
+The MMGIS test suite has consolidated on Playwright — every spec file, fast or
+slow, is now executed by `@playwright/test`. The top-level `README.md` still
+references Jest in passing (a leftover from the v2.0.0 era when Jest was added),
+but `tests/` itself has no Jest config or specs left. That keeps the dependency surface small and lets unit and e2e
 tests share the same imports, assertions, and HTML reporter.
 
 The split is purely structural:

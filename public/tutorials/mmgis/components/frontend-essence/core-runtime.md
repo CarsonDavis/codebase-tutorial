@@ -10,7 +10,7 @@ related:
   - backend-api/feature-modules
 key_idea: essence.js calls each Basic's init then fina in a fixed order, with L_ acting as the ambient bus that ties imperative jQuery code, React islands, and the embed API together.
 watch_out:
-  - The deck.gl path in Map_ is partial — hundreds of "if engineType !== LEAFLET return" early-exits mark methods that haven't been ported yet, so a feature that works on Leaflet may silently no-op on deck.gl.
+  - The deck.gl path in Map_ is partial — a scattering of `engineType !== LEAFLET` early-exits mark methods that haven't been ported yet, so a feature that works on Leaflet may silently no-op on deck.gl.
 seams_touched:
   - browser-backend
 next:
@@ -35,9 +35,10 @@ calls them in a fixed order on `essence.init(config)`:
    `fina()` on `Globe_`, `L_`, `UserInterface_`, `Viewer_`, `TimeControl`, and the
    `mmgisAPI_` in that order, then runs `ComponentController_.initializeComponents()`.
 
-`init` and `fina` are the two-phase pattern every Basic implements: `init`
-constructs DOM and reads config, `fina` wires cross-references between modules
-once they all exist. `essence.swapMission` re-runs `init` with `swapping=true` to
+`init` and `fina` are the two-phase pattern most engine and controller Basics
+implement (`F_` is a pure-function grab-bag with neither, and `Map_.init` is
+itself the trigger that runs everyone else's `fina`): `init` constructs DOM and
+reads config, `fina` wires cross-references between modules once they all exist. `essence.swapMission` re-runs `init` with `swapping=true` to
 hot-reload a different mission without a page refresh — `L_.clear()` resets state,
 the engines are recreated, and the UI re-finalizes.
 
@@ -107,7 +108,7 @@ this.map = engine.getNativeMap() ?? {}
 
 `ENGINE_LAYER_SUPPORT` in `types/engine.ts` declares which `LayerType`s each
 engine can render; `engineSupportsLayer()` is consulted by layer construction to
-skip incompatible layers. Hundreds of `if (Map_.engine.engineType !== LEAFLET)
+skip incompatible layers. A scattering of `if (Map_.engine.engineType !== LEAFLET)
 return` early-exits inside `Map_.js` mark the methods that haven't been ported
 to the deck.gl path yet — the migration is in flight.
 
