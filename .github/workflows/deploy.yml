@@ -47,9 +47,9 @@ jobs:
 
       - name: Next.js static export
         env:
-          # Only this list of tutorials ships to production. mmgis is gitignored
-          # (private source repo), example-repo is a dev fixture used in tests.
-          TUTORIAL_ALLOWLIST: code-explainer
+          # Only this list of tutorials ships to production. example-repo is a
+          # dev fixture used in tests and is intentionally excluded.
+          TUTORIAL_ALLOWLIST: mmgis,code-explainer
         run: npm run build
 
       # ── CDK deploy ────────────────────────────────────────────

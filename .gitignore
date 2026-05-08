@@ -13,5 +13,6 @@ cdk/outputs.json
 cdk/__pycache__/
 cdk/**/__pycache__/
 
-# Tutorials sourced from private repos — keep locally, never commit.
-public/tutorials/mmgis/
+# Tutorials sourced from private repos — keep locally, never commit. Add
+# specific paths here when a tutorial's source repo is private. mmgis was
+# previously listed but is sourced from the open-source NASA-AMMOS/MMGIS.

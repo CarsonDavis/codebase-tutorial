@@ -1,0 +1,223 @@
+slug: mmgis
+name: MMGIS
+source:
+  path: /Users/cdavis/github/MMGIS
+  url: https://github.com/NASA-AMMOS/MMGIS
+notes: |
+  MMGIS (Multi-Mission Geographic Information System) is a NASA-AMMOS web app for
+  planetary mission GIS. It is a mature, polyglot monorepo: a Node.js/Express backend,
+  a React + Webpack frontend called "Essence", a separate React admin SPA called
+  "Configure", a Postgres/PostGIS database accessed via Sequelize, optional adjacent
+  Python services (TiTiler, STAC, tipg), and a pile of GDAL/Python tile-processing
+  scripts under `auxiliary/`.
+
+  Stack at a glance:
+    - Node 20.11.1 (.nvmrc); Express 4 server in `scripts/server.js`.
+    - Sequelize ORM over Postgres 16 + PostGIS 3 for vector data; raw SQL/PostGIS for
+      spatial queries; pg-promise also present.
+    - Frontend bundled with custom Webpack 5 (config in `configuration/webpack.config.js`).
+      "Essence" lives in `src/essence/` and uses jQuery-style imperative code plus React
+      16 islands. Mapping libs: Leaflet (2D), Cesium (3D), plus Mapbox-GL/MapLibre/Deck.gl.
+    - Configure SPA in `configure/` is a separate React app with its own webpack pipeline.
+    - Real-time collaboration over a `ws` WebSocket server (`API/websocket.js`).
+    - Plugin system: drop dirs matching `*Private-Tools*` / `*Plugin-Tools*` (frontend) or
+      `*Private-Backend*` / `*Plugin-Backend*` (backend); they are gitignored and picked
+      up by the build/start scripts.
+
+  Conventions:
+    - Backend "feature modules" live under `API/Backend/<Name>/` and follow a consistent
+      shape: `models/`, `routes/`, `setup.js`. They are mounted by `API/setups.js`.
+    - Frontend modules under `src/essence/` are organized by responsibility: `Basics/`
+      (map engines, controllers), `Tools/` (mapping tools), `Ancillary/` (UI chrome),
+      `mmgisAPI/` (programmatic API for embedders), `Helpers/`, `LandingPage/`.
+    - Tests use Playwright (e2e and lightweight "unit" specs under `tests/`); Jest is
+      mentioned in the README but the suite has migrated to Playwright.
+    - Spec-kit (`/specs`, `/.specify`) is the in-repo design-doc workflow — useful as
+      reference, not as runtime code.
+
+components:
+  - id: frontend-essence
+    title: Frontend (Essence)
+    summary: The browser-side mapping application. A custom Webpack-bundled hybrid of
+      jQuery-era imperative code and React 16 islands, organized around a shared map
+      state, swappable 2D/3D engines, and a tool registry.
+    type: subdivided
+    focus_paths:
+      - src/essence
+      - src/css
+      - src/pre
+      - views
+    sub_sections:
+      - id: core-runtime
+        title: Core runtime and map engines
+        summary: How Essence boots, wires up the global `L_` map state, manages the
+          panel layout, and switches between Leaflet (2D), Cesium (3D), and the image
+          viewer. Lives in `src/essence/Basics/`.
+        focus_paths:
+          - src/essence/essence.js
+          - src/essence/Basics/Map_
+          - src/essence/Basics/Globe_
+          - src/essence/Basics/Viewer_
+          - src/essence/Basics/MapEngines
+          - src/essence/Basics/Layers_
+          - src/essence/Basics/PanelManager_
+          - src/essence/Basics/UserInterface_
+          - src/essence/Basics/ComponentController_
+          - src/essence/Basics/ToolController_
+          - src/essence/Basics/TimeControl_
+          - src/essence/Basics/Formulae_
+      - id: tools
+        title: Mapping tools
+        summary: User-facing tools (Draw, Measure, Identifier, Isochrone, Animation,
+          Curtain, Viewshed, Chemistry, Layers, Sites, etc.) — each a self-contained
+          module loaded by the ToolController. Includes the "New Tool Template" used
+          to author plugins.
+        focus_paths:
+          - src/essence/Tools
+      - id: ancillary-ui
+        title: Ancillary UI and chrome
+        summary: The non-map UI surface — login, search, context menus, modals,
+          attributions, scale bar, coordinate readout, help, query-by-URL, cursor
+          info, sprites, data shaders. Each piece is an independent JS module under
+          `src/essence/Ancillary/`.
+        focus_paths:
+          - src/essence/Ancillary
+          - src/essence/Helpers
+          - src/essence/LandingPage
+      - id: mmgis-api
+        title: mmgisAPI (embed/extension surface)
+        summary: The public, stable JavaScript API exposed to embedders and plugin
+          authors so they can drive MMGIS from outside. This is what lets MMGIS be
+          dropped into other mission UIs.
+        focus_paths:
+          - src/essence/mmgisAPI
+
+  - id: backend-api
+    title: Backend (API server)
+    summary: Express 4 server that serves the SPA, mounts a tree of feature modules
+      under `/api`, talks to Postgres/PostGIS through Sequelize, and runs a WebSocket
+      server for real-time collaboration.
+    type: subdivided
+    focus_paths:
+      - scripts/server.js
+      - scripts/init-db.js
+      - scripts/middleware.js
+      - API
+    sub_sections:
+      - id: server-bootstrap
+        title: Server bootstrap and middleware
+        summary: How the process starts — `init-db.js` waits on Postgres and runs
+          migrations, `server.js` configures Express (helmet, sessions, OAS generator,
+          static SPA serving), `middleware.js` provides per-route auth/permission
+          guards, and `API/websocket.js` upgrades to WS for collaboration.
+        focus_paths:
+          - scripts/server.js
+          - scripts/init-db.js
+          - scripts/middleware.js
+          - API/connection.js
+          - API/database.js
+          - API/setups.js
+          - API/websocket.js
+          - API/utils.js
+          - API/logger.js
+      - id: feature-modules
+        title: Feature modules under API/Backend
+        summary: The repeating shape every backend feature follows — `models/`,
+          `routes/`, `setup.js` — and a tour of the modules that matter most:
+          Datasets (vector data CRUD + PostGIS queries), Geodatasets, Draw (real-time
+          drawing), Config, Stac, Webhooks, Shortener.
+        focus_paths:
+          - API/Backend/Datasets
+          - API/Backend/Geodatasets
+          - API/Backend/Draw
+          - API/Backend/Config
+          - API/Backend/Stac
+          - API/Backend/Webhooks
+          - API/Backend/Shortener
+          - API/Backend/GeneralOptions
+          - API/Backend/Utils
+          - API/Backend/setupTemplate.js
+      - id: auth-and-sessions
+        title: Auth, accounts, and sessions
+        summary: How users sign in, how the first-user-becomes-admin flow works, how
+          long-term tokens are issued for programmatic access, and how Express sessions
+          are persisted in Postgres via `connect-pg-simple`.
+        focus_paths:
+          - API/Backend/Accounts
+          - API/Backend/Users
+          - API/Backend/LongTermToken
+
+  - id: configure-spa
+    title: Configure (admin SPA)
+    summary: A separate React application that powers `/configure` — the in-browser
+      admin tool used to create missions, define layers, edit datasets, and manage
+      users. It has its own webpack build, served alongside the main app.
+    type: atomic
+    focus_paths:
+      - configure
+      - configure/src
+      - configure/scripts
+
+  - id: build-and-bundling
+    title: Build, bundling, and dev server
+    summary: The custom Webpack 5 configuration (forked from a Create-React-App eject)
+      that bundles Essence, the build entry point, and the dual-port dev setup
+      (`8888` SPA, `8889` ancillary pages). Includes plugin-directory glob loading.
+    type: atomic
+    focus_paths:
+      - scripts/build.js
+      - configuration/webpack.config.js
+      - configuration/webpackDevServer.config.js
+      - configuration/paths.js
+      - configuration/env.js
+      - configuration/modules.js
+      - configuration/getHttpsConfig.js
+
+  - id: adjacent-servers
+    title: Adjacent servers (TiTiler, STAC, tipg)
+    summary: Optional Python tile/feature services that MMGIS proxies through to.
+      Wired in via Docker Compose profiles and the `adjacent-servers-proxy.js`
+      front-door, so missions can opt into COG tiling, STAC catalogs, or vector
+      tile serving without changing core code.
+    type: atomic
+    focus_paths:
+      - adjacent-servers
+      - adjacent-servers/titiler
+      - adjacent-servers/titiler-pgstac
+      - adjacent-servers/stac
+      - adjacent-servers/tipg
+      - adjacent-servers/adjacent-servers.js
+      - adjacent-servers/adjacent-servers-proxy.js
+
+  - id: auxiliary-scripts
+    title: Auxiliary GIS processing scripts
+    summary: A toolbox of standalone Python (mostly GDAL) and Node scripts for
+      preparing mission data — slicing rasters into tiles, building DEM tiles,
+      bulk-tiling, raster-to-legend, geojson normalization, and more. Run offline
+      to feed the database and tile directories.
+    type: atomic
+    focus_paths:
+      - auxiliary
+      - auxiliary/gdal2customtiles
+      - auxiliary/gdal2tiles4extent
+      - auxiliary/demtiles
+      - auxiliary/bulk_tiles
+      - auxiliary/rasterstotiles
+      - auxiliary/populateMosaics
+      - auxiliary/rasterLabels
+      - auxiliary/rastertolegend
+      - auxiliary/quantize_colormap
+      - auxiliary/geojson2ndgeojson
+
+  - id: testing
+    title: Testing (Playwright)
+    summary: How automated tests are organized — Playwright is the single test runner
+      for both `tests/unit` (lightweight fast specs) and `tests/e2e` (full-stack
+      browser flows). Includes the test server entry point and shared fixtures.
+    type: atomic
+    focus_paths:
+      - tests
+      - tests/e2e
+      - tests/unit
+      - tests/fixtures
+      - tests/README.md

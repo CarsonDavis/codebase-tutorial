@@ -1,13 +1,24 @@
 import path from "node:path";
 import { discoverTutorials, loadTutorial } from "@/lib/tutorials";
 import { TutorialCard } from "@/components/TutorialCard";
+import { FeaturedTutorial } from "@/components/FeaturedTutorial";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
+
+/**
+ * The slug of the tutorial featured on the home page hero. Reads from env so it can be
+ * overridden per-deployment without code changes; falls back to the most recent one if
+ * the chosen slug isn't present.
+ */
+const FEATURED_SLUG = process.env.FEATURED_TUTORIAL ?? "mmgis";
 
 export default async function Home() {
   const slugs = await discoverTutorials(TUTORIALS_DIR);
   const tutorials = await Promise.all(slugs.map((s) => loadTutorial(TUTORIALS_DIR, s)));
   tutorials.sort((a, b) => (b.generatedAt ?? "").localeCompare(a.generatedAt ?? ""));
+
+  const featured = tutorials.find((t) => t.slug === FEATURED_SLUG) ?? tutorials[0];
+  const others = tutorials.filter((t) => t !== featured);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
@@ -23,17 +34,28 @@ export default async function Home() {
           No tutorials yet. Run the agent pipeline to generate one.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {tutorials.map((t) => (
-            <TutorialCard
-              key={t.slug}
-              slug={t.slug}
-              name={t.name}
-              summary={t.summary}
-              generatedAt={t.generatedAt}
-            />
-          ))}
-        </div>
+        <>
+          {featured && <FeaturedTutorial tutorial={featured} />}
+
+          {others.length > 0 && (
+            <section className="mt-12">
+              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-[var(--color-fg-muted)]">
+                Other tutorials
+              </h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {others.map((t) => (
+                  <TutorialCard
+                    key={t.slug}
+                    slug={t.slug}
+                    name={t.name}
+                    summary={t.summary}
+                    generatedAt={t.generatedAt}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </main>
   );

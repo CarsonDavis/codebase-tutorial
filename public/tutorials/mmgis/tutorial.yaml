@@ -1,0 +1,168 @@
+slug: mmgis
+name: MMGIS
+source:
+  path: /Users/cdavis/github/MMGIS
+  url: https://github.com/NASA-AMMOS/MMGIS
+generated_at: 2026-05-07T17:36:54Z
+generator_version: 0.2.0
+
+summary: NASA-AMMOS web-based GIS for planetary missions — a Postgres/PostGIS backend, a custom-bundled React + jQuery mapping frontend (Essence), a separate admin SPA, optional Python tile services, and a stack of GDAL data-prep scripts.
+
+components:
+  - id: frontend-essence
+    title: Frontend (Essence)
+    summary: The browser-side mapping application. A custom Webpack-bundled hybrid of
+      jQuery-era imperative code and React 16 islands, organized around a shared map
+      state, swappable 2D/3D engines, and a tool registry.
+    type: subdivided
+    sub_sections:
+      - id: core-runtime
+        title: Core runtime and map engines
+        summary: How Essence boots, wires up the global L_ map state, manages the panel
+          layout, and switches between Leaflet (2D), Cesium-based Globe (3D), and the
+          image Viewer.
+      - id: tools
+        title: Mapping tools
+        summary: Self-contained tool modules (Draw, Measure, Layers, Identifier, …)
+          loaded by the ToolController, plus the plugin-drop convention used to add
+          new ones.
+      - id: ancillary-ui
+        title: Ancillary UI and chrome
+        summary: The non-map UI surface — login, search, context menus, modals, scale
+          bar, coordinate readout, help, query-by-URL, and the landing page.
+      - id: mmgis-api
+        title: mmgisAPI (embed/extension surface)
+        summary: The public, stable JavaScript API exposed to embedders and plugin
+          authors so they can drive MMGIS from outside.
+
+  - id: backend-api
+    title: Backend (API server)
+    summary: Express 4 server that serves the SPA, mounts a tree of feature modules
+      under /api, talks to Postgres/PostGIS through Sequelize, and runs a WebSocket
+      server for real-time collaboration.
+    type: subdivided
+    sub_sections:
+      - id: server-bootstrap
+        title: Server bootstrap and middleware
+        summary: How the MMGIS process starts, composes Express, mounts feature
+          modules via the setup lifecycle, and attaches the WebSocket server.
+      - id: feature-modules
+        title: Feature modules under API/Backend
+        summary: The repeating shape every backend feature follows, and a tour of the
+          modules that matter (Datasets, Geodatasets, Draw, Config, Stac, Webhooks,
+          Shortener, etc.).
+      - id: auth-and-sessions
+        title: Auth, accounts, and sessions
+        summary: How users sign in, the first-user-becomes-admin flow, long-term
+          tokens for programmatic access, and Postgres-backed Express sessions.
+
+  - id: configure-spa
+    title: Configure (admin SPA)
+    summary: A separate React app served at /configure for managing missions, layers,
+      datasets, and users. Has its own webpack build.
+    type: atomic
+
+  - id: build-and-bundling
+    title: Build, bundling, and dev server
+    summary: The CRA-eject Webpack 5 pipeline that bundles Essence, plus the
+      dual-port dev convention and the plugin-directory glob loader.
+    type: atomic
+
+  - id: adjacent-servers
+    title: Adjacent servers (TiTiler, STAC, tipg)
+    summary: Optional Python tile and feature services that MMGIS proxies to, wired
+      in as opt-in Compose profiles behind a single, /-rooted front door.
+    type: atomic
+
+  - id: auxiliary-scripts
+    title: Auxiliary GIS processing scripts
+    summary: Offline data-prep utilities — mostly Python over GDAL — for slicing
+      rasters into tiles, building DEMs, generating legends, and normalizing vector
+      data before it lands in MMGIS.
+    type: atomic
+
+  - id: testing
+    title: Testing (Playwright)
+    summary: Playwright is the single runner for unit and e2e specs; one config, one
+      command surface, with the backend started automatically for browser tests.
+    type: atomic
+
+cross_refs:
+  # Within frontend-essence
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/tools
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/mmgis-api
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/ancillary-ui
+  - from: frontend-essence/tools
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/tools
+    to: frontend-essence/mmgis-api
+  - from: frontend-essence/tools
+    to: configure-spa
+    note: Tool config schemas are rendered as forms in Configure
+  - from: frontend-essence/ancillary-ui
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/mmgis-api
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/mmgis-api
+    to: frontend-essence/tools
+
+  # Within backend-api
+  - from: backend-api/server-bootstrap
+    to: backend-api/feature-modules
+  - from: backend-api/server-bootstrap
+    to: backend-api/auth-and-sessions
+  - from: backend-api/feature-modules
+    to: backend-api/server-bootstrap
+  - from: backend-api/feature-modules
+    to: backend-api/auth-and-sessions
+  - from: backend-api/feature-modules
+    to: adjacent-servers
+    note: Stac feature module proxies the STAC adjacent service
+  - from: backend-api/auth-and-sessions
+    to: backend-api/server-bootstrap
+  - from: backend-api/auth-and-sessions
+    to: backend-api/feature-modules
+  - from: backend-api/auth-and-sessions
+    to: configure-spa
+    note: Configure is the primary consumer of admin-only auth
+
+  # Atomic component cross-component edges
+  - from: configure-spa
+    to: backend-api/feature-modules
+  - from: configure-spa
+    to: backend-api/auth-and-sessions
+  - from: configure-spa
+    to: build-and-bundling
+  - from: build-and-bundling
+    to: frontend-essence/core-runtime
+  - from: build-and-bundling
+    to: frontend-essence/tools
+  - from: build-and-bundling
+    to: configure-spa
+  - from: adjacent-servers
+    to: backend-api/feature-modules
+  - from: adjacent-servers
+    to: backend-api/server-bootstrap
+  - from: auxiliary-scripts
+    to: backend-api/feature-modules
+  - from: auxiliary-scripts
+    to: adjacent-servers
+  - from: testing
+    to: backend-api/server-bootstrap
+
+aux:
+  - id: glossary
+    title: Glossary
+    summary: Repo-specific vocabulary — singletons, conventions, and codenames the prose assumes you know.
+  - id: characters
+    title: Cast of characters
+    summary: The named abstractions that recur through the tutorial — actors with distinct roles.
+  - id: decisions
+    title: Decisions
+    summary: Non-obvious decisions whose context shapes the rest of MMGIS.
+  - id: seams
+    title: Seams
+    summary: The boundaries every meaningful change has to cross.
