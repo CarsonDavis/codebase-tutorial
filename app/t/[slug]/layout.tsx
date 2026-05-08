@@ -23,7 +23,7 @@ export default async function TutorialLayout({ children, params }: Props) {
   return (
     <div className="mx-auto grid max-w-7xl grid-cols-[16rem_1fr] gap-8 px-6 py-10">
       <aside className="sticky top-10 self-start">
-        <TutorialNav slug={slug} components={tutorial.components} />
+        <TutorialNav slug={slug} components={tutorial.components} aux={tutorial.aux} />
       </aside>
       <div>{children}</div>
     </div>

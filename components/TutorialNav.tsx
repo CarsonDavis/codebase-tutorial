@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { Component } from "@/lib/types";
+import type { Component, AuxEntry } from "@/lib/types";
 
 interface Props {
   slug: string;
   components: Component[];
+  aux?: AuxEntry[];
 }
 
-export function TutorialNav({ slug, components }: Props) {
+export function TutorialNav({ slug, components, aux }: Props) {
   const pathname = usePathname();
   const overviewHref = `/t/${slug}/`;
 
@@ -56,6 +57,26 @@ export function TutorialNav({ slug, components }: Props) {
           );
         })}
       </ul>
+
+      {aux && aux.length > 0 && (
+        <>
+          <div className="mt-6 border-t border-[var(--color-border)] pt-4 text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-muted)]">
+            Reference
+          </div>
+          <ul className="mt-2 space-y-2">
+            {aux.map((a) => {
+              const auxHref = `/t/${slug}/aux/${a.id}/`;
+              return (
+                <li key={a.id}>
+                  <Link href={auxHref} className={navClass(pathname === auxHref)}>
+                    {a.title}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </nav>
   );
 }

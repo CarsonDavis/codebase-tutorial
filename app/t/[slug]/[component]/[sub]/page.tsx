@@ -4,11 +4,16 @@ import {
   discoverTutorials,
   loadTutorial,
   loadSection,
+  loadAux,
+  loadGlossaryIndex,
+  parseAuxRecords,
 } from "@/lib/tutorials";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
 import { RelatedFooter } from "@/components/RelatedFooter";
 import { PageToc } from "@/components/PageToc";
+import { SectionChrome } from "@/components/SectionChrome";
+import { SectionFooterNav } from "@/components/SectionFooterNav";
 import { relatedFor } from "@/lib/paths";
 
 const TUTORIALS_DIR = path.join(process.cwd(), "public/tutorials");
@@ -41,16 +46,29 @@ export default async function SubSectionPage({ params }: Props) {
     notFound();
   }
 
+  const [glossary, seamsAux] = await Promise.all([
+    loadGlossaryIndex(TUTORIALS_DIR, slug),
+    loadAux(TUTORIALS_DIR, slug, "seams"),
+  ]);
+  const seams = seamsAux ? parseAuxRecords(seamsAux.body) : [];
+
   const { html, toc } = await renderMarkdown(section.body, {
     slug,
     currentComponent: component,
     currentSub: sub,
+    glossary,
   });
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_14rem]">
       <article>
+        <SectionChrome
+          tutorial={tutorial}
+          frontmatter={section.frontmatter}
+          seams={seams}
+        />
         <MarkdownBody html={html} />
+        <SectionFooterNav tutorial={tutorial} frontmatter={section.frontmatter} />
         <RelatedFooter
           items={relatedFor(tutorial, `${component}/${sub}`, section.frontmatter.related)}
         />

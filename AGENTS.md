@@ -19,8 +19,10 @@ document. The full design rationale lives at
 
 ## Pipeline
 
-Three stages run in order. Outputs from each stage are persisted to disk so the pipeline
-is debuggable and resumable.
+Four stages run in order. Outputs from each stage are persisted to disk so the pipeline
+is debuggable and resumable. Stages 1–3 produce the structural tutorial; stage 4 is an
+additive polish pass that supplements existing content with cross-cutting addenda pages
+and frontmatter chrome. Stage 4 is optional — a tutorial without it still works.
 
 ### Stage 1 — Survey (single agent, serial)
 
@@ -68,6 +70,21 @@ Job:
    references). Conservative — this is not a rewrite pass.
 
 Output: `intro.md`, subdivided component `index.md` files, finalized `tutorial.yaml`.
+
+### Stage 4 — Augment (single agent, serial, optional)
+
+Input: everything stages 1–3 produced.
+
+Job: write the four cross-cutting "addenda" pages (`aux/glossary.md`,
+`aux/characters.md`, `aux/decisions.md`, `aux/seams.md`) and add chrome frontmatter
+(`key_idea` if missing, `watch_out`, `seams_touched`, `prerequisites`, `next`) to every
+existing leaf. **Frontmatter-only edits to existing leaves; no prose rewrites.**
+
+Stage 4 may be re-run independently of stage 2, which is the point: polish iteration is
+cheap, regenerating leaves is not.
+
+Output: four files under `aux/`, frontmatter touches on existing `.md` files, and an
+`aux:` block plus bumped `generator_version` in `tutorial.yaml`.
 
 ---
 
@@ -128,6 +145,11 @@ cross_refs:                              # optional
   - from: <component-id>[/<sub-id>]
     to:   <component-id>[/<sub-id>]
     note: <optional short reason>
+
+aux:                                     # stage 4 only; one entry per addenda page
+  - id: glossary | characters | decisions | seams
+    title: <human title>
+    summary: <one-line>
 ```
 
 ### Section markdown frontmatter
@@ -138,15 +160,48 @@ Every `.md` file under a tutorial begins with YAML frontmatter:
 ---
 id: <component-id>            # for index.md, the component id
                               # for sub-section.md, "<component-id>/<sub-id>"
+                              # for addenda pages, "aux/<name>"
 title: <human title>
 summary: <one-line>
+key_idea: <one sentence>      # stage 2 writer authors; stage 4 may fill gaps
 related:                      # optional; inline cross-refs the writer wants to surface
+  - <component-id>[/<sub-id>]
+
+# Stage 4 chrome (additive, frontmatter-only):
+watch_out:                    # optional; ≤ 2 entries; counter-intuitions
+  - <single sentence>
+seams_touched:                # optional; seam ids matching aux/seams.md h2s
+  - <kebab-case-seam-id>
+prerequisites:                # optional; leaves to read first
+  - <component-id>[/<sub-id>]
+next:                         # optional; one suggested follow-up leaf id
   - <component-id>[/<sub-id>]
 ---
 ```
 
 Body is markdown. Code snippets use standard fenced blocks. The viewer applies Shiki for
 syntax highlighting; do not pre-format with HTML.
+
+### Inline callouts
+
+The writer (stage 2) may place inline callouts using GitHub-flavored alert syntax,
+extended with four types. The renderer styles each with a distinct color.
+
+```markdown
+> [!NOTE]            (neutral — supporting info)
+> [!WATCH-OUT]       (amber — counter-intuition; your instinct breaks here)
+> [!WHY]             (violet — decision context; "looks weird because…")
+> [!SEAM]            (teal — boundary you're crossing in this paragraph)
+```
+
+Cap at two callouts per leaf, excluding plain `NOTE`s. Stage 4 does not add inline
+callouts — recurring counter-intuitions go in `watch_out` frontmatter instead.
+
+### Addenda page format (stage 4)
+
+Each addenda page lives at `aux/<name>.md` and uses h2 headings as entry keys. The
+renderer parses h2 text + slug to build a directory of glossary terms / characters /
+decisions / seams, and exposes the slugs as stable anchors for cross-references.
 
 ### Cross-references
 
@@ -190,10 +245,14 @@ any instinct to be exhaustive.
 ```
 public/tutorials/<slug>/
   survey.yaml                 # stage 1 output (kept around for debugging)
-  tutorial.yaml               # stage 3 output (canonical)
-  intro.md                    # stage 3 output
-  components/<id>/index.md    # stage 2 if atomic; stage 3 if subdivided
-  components/<id>/<sub>.md    # stage 2
+  tutorial.yaml               # stage 3 + stage 4 output (canonical)
+  intro.md                    # stage 3 output (frontmatter touched by stage 4)
+  components/<id>/index.md    # stage 2 if atomic; stage 3 if subdivided (frontmatter touched by stage 4)
+  components/<id>/<sub>.md    # stage 2 (frontmatter touched by stage 4)
+  aux/glossary.md             # stage 4
+  aux/characters.md           # stage 4
+  aux/decisions.md            # stage 4
+  aux/seams.md                # stage 4
 ```
 
 ## Out of scope

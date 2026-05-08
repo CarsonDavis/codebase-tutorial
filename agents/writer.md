@@ -44,10 +44,42 @@ specifics. Read the survey to orient yourself in the wider repo.
 id: <leaf-id>                 # e.g. "backend" or "frontend/routing"
 title: <human title>          # match survey.yaml
 summary: <one-line>            # match survey.yaml; tighten if needed
+key_idea: <one sentence>       # the load-bearing idea — what the reader should retain
 related:                      # optional
   - <component-id>[/<sub-id>]
 ---
 ```
+
+`key_idea` is the single sentence you'd keep if a reader skimmed and retained nothing
+else. Required. Write it last, after the prose, when you can see what your own page
+actually says. Avoid restating the title or summary — the key idea should be a *claim*,
+not a label.
+
+## Inline callouts (optional)
+
+When prose alone would gloss over something the reader needs to notice at a specific
+paragraph, place a callout. Use GitHub-flavored alert syntax with one of four types:
+
+```markdown
+> [!NOTE]
+> Plain supporting note. Use sparingly.
+
+> [!WATCH-OUT]
+> Counter-intuition the reader's instinct would get wrong.
+
+> [!WHY]
+> Decision context — "this looks weird because…"
+
+> [!SEAM]
+> A boundary you're crossing right here in the prose.
+```
+
+Cap at **two callouts per leaf** total, excluding generic notes. If you need more, the
+content probably wants to split.
+
+Prefer `WATCH-OUT` and `WHY` over `NOTE`; the former two carry semantic weight, the
+latter is mostly decoration. `SEAM` is for the rare case where naming the boundary helps
+the reader more than describing what's on each side.
 
 ## Output path
 

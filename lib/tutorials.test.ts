@@ -5,6 +5,8 @@ import {
   loadTutorial,
   loadIntro,
   loadSection,
+  loadAux,
+  parseAuxRecords,
 } from "./tutorials";
 
 const ROOT = path.resolve(process.cwd(), "public/tutorials");
@@ -93,5 +95,34 @@ describe("loadSection", () => {
     await expect(
       loadSection(ROOT, "example-repo", "frontend", "no-such-sub"),
     ).rejects.toThrow(/no-such-sub/);
+  });
+});
+
+describe("parseAuxRecords", () => {
+  it("splits an aux body on h2 headings into records", () => {
+    const body = `Intro paragraph.\n\n## L_\n\nThe global state.\n\n## Mission\n\nA bundle.\n`;
+    const records = parseAuxRecords(body);
+    expect(records).toHaveLength(2);
+    expect(records[0]).toMatchObject({ name: "L_", slug: "l_" });
+    expect(records[0].body).toContain("global state");
+    expect(records[1]).toMatchObject({ name: "Mission", slug: "mission" });
+  });
+
+  it("returns an empty array when no h2 headings exist", () => {
+    expect(parseAuxRecords("just text")).toEqual([]);
+  });
+
+  it("ignores h1 and h3 (only h2 are entry boundaries)", () => {
+    const body = `# top\n\n## A\n\n### nested\n\nbody\n\n## B\n\nbody\n`;
+    const records = parseAuxRecords(body);
+    expect(records.map((r) => r.name)).toEqual(["A", "B"]);
+    expect(records[0].body).toContain("### nested");
+  });
+});
+
+describe("loadAux", () => {
+  it("returns null when the aux file does not exist", async () => {
+    const aux = await loadAux(ROOT, "example-repo", "glossary");
+    expect(aux).toBeNull();
   });
 });

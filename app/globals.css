@@ -10,8 +10,93 @@
   --color-border: #232830;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Chrome: key-idea (blue, neutral-strong) */
+  --color-keyidea-bg: #131a2e;
+  --color-keyidea-border: #2a3a66;
+  --color-keyidea-label: #9bb0ee;
+
+  /* Chrome: watch-out / counter-intuition (amber) */
+  --color-watchout-bg: #2a2014;
+  --color-watchout-border: #6b4f24;
+  --color-watchout-label: #e9b86b;
+
+  /* Chrome: why / decision (violet) */
+  --color-why-bg: #211735;
+  --color-why-border: #573e7e;
+  --color-why-label: #c4a8ee;
+
+  /* Chrome: seam / boundary (teal) */
+  --color-seam-bg: #112727;
+  --color-seam-border: #285a55;
+  --color-seam-label: #7fd6c2;
+  --color-seam-strong: #4eb39a;
+
+  /* Chrome: note (slate, the default neutral callout) */
+  --color-note-bg: #161a21;
+  --color-note-border: #2c3340;
+  --color-note-label: #a8b2c0;
 }
 
 html, body { background: var(--color-bg); color: var(--color-fg); }
 body { font-family: var(--font-sans); }
 a { color: var(--color-accent); }
+
+/* Inline callouts produced by the markdown pipeline. We use semantic data
+   attributes so the four types are clearly differentiated visually but share
+   one CSS shape. */
+.prose .callout {
+  margin-block: 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.5rem;
+  border-left-width: 3px;
+  border-left-style: solid;
+  font-size: 0.95rem;
+}
+.prose .callout > .callout-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.prose .callout > .callout-body > :first-child { margin-top: 0; }
+.prose .callout > .callout-body > :last-child  { margin-bottom: 0; }
+
+.prose .callout[data-callout="note"] {
+  background: var(--color-note-bg);
+  border-left-color: var(--color-note-border);
+}
+.prose .callout[data-callout="note"] > .callout-label { color: var(--color-note-label); }
+
+.prose .callout[data-callout="watch-out"] {
+  background: var(--color-watchout-bg);
+  border-left-color: var(--color-watchout-label);
+}
+.prose .callout[data-callout="watch-out"] > .callout-label { color: var(--color-watchout-label); }
+
+.prose .callout[data-callout="why"] {
+  background: var(--color-why-bg);
+  border-left-color: var(--color-why-label);
+}
+.prose .callout[data-callout="why"] > .callout-label { color: var(--color-why-label); }
+
+.prose .callout[data-callout="seam"] {
+  background: var(--color-seam-bg);
+  border-left-color: var(--color-seam-strong);
+}
+.prose .callout[data-callout="seam"] > .callout-label { color: var(--color-seam-label); }
+
+/* Glossary auto-link: dotted underline, low visual weight. The link itself takes
+   the reader to the glossary entry; the title attribute (set by the markdown
+   pipeline) gives a native browser tooltip. */
+.prose .glossary-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--color-fg-muted);
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.prose .glossary-link:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}

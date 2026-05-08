@@ -50,6 +50,16 @@ describe("renderMarkdown — link rewriting", () => {
     expect(html).toContain('href="#somewhere"');
     expect(html).toContain('href="/elsewhere"');
   });
+
+  it("rewrites .md links into aux page routes from a leaf", async () => {
+    const body = `[gloss](../../aux/glossary.md#l_)`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      currentSub: "routing",
+    });
+    expect(html).toContain('href="/t/example/aux/glossary/#l_"');
+  });
 });
 
 describe("renderMarkdown — code highlighting", () => {
@@ -110,5 +120,107 @@ describe("renderMarkdown — TOC", () => {
     const idMatch = html.match(/<h2 id="([^"]+)">/);
     expect(idMatch).not.toBeNull();
     expect(toc[0].slug).toBe(idMatch![1]);
+  });
+});
+
+describe("renderMarkdown — callouts", () => {
+  it("renders a WATCH-OUT callout as an aside with data attribute and label", async () => {
+    const body = `> [!WATCH-OUT]\n> Plugin dirs are gitignored.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(html).toContain('data-callout="watch-out"');
+    expect(html).toContain("callout-label");
+    expect(html).toContain("Watch out");
+    expect(html).toContain("Plugin dirs are gitignored");
+  });
+
+  it("renders all four canonical callout types", async () => {
+    const body = [
+      `> [!NOTE]\n> n`,
+      `> [!WATCH-OUT]\n> w`,
+      `> [!WHY]\n> y`,
+      `> [!SEAM]\n> s`,
+    ].join("\n\n");
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(html).toContain('data-callout="note"');
+    expect(html).toContain('data-callout="watch-out"');
+    expect(html).toContain('data-callout="why"');
+    expect(html).toContain('data-callout="seam"');
+  });
+
+  it("leaves a regular blockquote untouched", async () => {
+    const body = `> regular blockquote text\n`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(html).toContain("<blockquote>");
+    expect(html).not.toContain("data-callout");
+  });
+
+  it("ignores unknown alert types (treats them as regular blockquotes)", async () => {
+    const body = `> [!CAUTION]\n> not one of ours`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "backend",
+    });
+    expect(html).not.toContain("data-callout");
+  });
+});
+
+describe("renderMarkdown — glossary auto-linking", () => {
+  it("links the first occurrence of a glossary term", async () => {
+    const body = `The L_ singleton is central. Later, L_ is mentioned again.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [{ term: "L_", href: "/t/example/aux/glossary/#l_" }],
+    });
+    // Only the first L_ should be a link.
+    const matches = html.match(/<a [^>]*data-glossary="L_"/g) ?? [];
+    expect(matches.length).toBe(1);
+    expect(html).toContain("glossary-link");
+    expect(html).toContain('href="/t/example/aux/glossary/#l_"');
+  });
+
+  it("respects word boundaries (skips substrings)", async () => {
+    const body = `The word Mission appears. The word commission does not match.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [{ term: "Mission", href: "/x" }],
+    });
+    expect(html).toContain('data-glossary="Mission"');
+    // Make sure "commission" was not turned into a link.
+    expect(html).not.toMatch(/com<a [^>]*data-glossary/);
+  });
+
+  it("does not link inside headings", async () => {
+    const body = `## L_\n\nL_ in the body.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [{ term: "L_", href: "/x" }],
+    });
+    // Heading text stays plain; body picks up the link.
+    expect(html).toMatch(/<h2[^>]*>L_<\/h2>/);
+    expect(html).toContain('data-glossary="L_"');
+  });
+
+  it("does not link inside code spans or fenced code", async () => {
+    const body = "Use `L_` in code, and:\n```js\nL_.something()\n```";
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [{ term: "L_", href: "/x" }],
+    });
+    // Inline code stays bare.
+    expect(html).toContain("<code>L_</code>");
+    expect(html).not.toContain('data-glossary="L_"');
   });
 });

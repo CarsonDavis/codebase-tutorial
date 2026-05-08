@@ -2,7 +2,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import yaml from "js-yaml";
 import matter from "gray-matter";
-import type { Tutorial, Component, CrossRef, SectionFrontmatter } from "./types";
+import GithubSlugger from "github-slugger";
+import type {
+  Tutorial,
+  Component,
+  CrossRef,
+  SectionFrontmatter,
+  AuxEntry,
+  AuxId,
+  AuxRecord,
+} from "./types";
+
+const AUX_IDS: AuxId[] = ["glossary", "characters", "decisions", "seams"];
 
 export async function discoverTutorials(rootDir: string): Promise<string[]> {
   const entries = await fs.readdir(rootDir, { withFileTypes: true });
@@ -62,6 +73,81 @@ export async function loadSection(
   return readSectionFile(file, `section ${label} in ${slug}`);
 }
 
+/**
+ * Load an aux page (`aux/<name>.md`). Returns null if the file does not exist — aux
+ * pages are optional and a tutorial may have any subset.
+ */
+export async function loadAux(
+  rootDir: string,
+  slug: string,
+  auxId: AuxId,
+): Promise<SectionFile | null> {
+  const file = path.join(rootDir, slug, "aux", `${auxId}.md`);
+  try {
+    await fs.access(file);
+  } catch {
+    return null;
+  }
+  return readSectionFile(file, `aux ${auxId} in ${slug}`);
+}
+
+/**
+ * Parse an aux page into its h2-keyed records. Used to build the glossary index, the
+ * character roster, etc. Each h2 becomes an entry; the body is the raw markdown
+ * between this h2 and the next h2 (or end of file).
+ */
+export function parseAuxRecords(body: string): AuxRecord[] {
+  const lines = body.split("\n");
+  const records: AuxRecord[] = [];
+  const slugger = new GithubSlugger();
+  let current: { name: string; slug: string; lines: string[] } | null = null;
+
+  for (const line of lines) {
+    const m = /^##\s+(.+?)\s*$/.exec(line);
+    if (m) {
+      if (current) {
+        records.push({
+          name: current.name,
+          slug: current.slug,
+          body: current.lines.join("\n").trim(),
+        });
+      }
+      const name = m[1].trim();
+      current = { name, slug: slugger.slug(name), lines: [] };
+      continue;
+    }
+    if (current) current.lines.push(line);
+  }
+  if (current) {
+    records.push({
+      name: current.name,
+      slug: current.slug,
+      body: current.lines.join("\n").trim(),
+    });
+  }
+  return records;
+}
+
+/**
+ * Build the glossary auto-link index for a tutorial: maps each term name to its
+ * anchor href on the glossary page. Returns an empty map if no glossary aux page
+ * exists. Sorted longest-first so multi-word terms are matched before sub-strings.
+ */
+export async function loadGlossaryIndex(
+  rootDir: string,
+  slug: string,
+): Promise<Array<{ term: string; href: string }>> {
+  const aux = await loadAux(rootDir, slug, "glossary");
+  if (!aux) return [];
+  const records = parseAuxRecords(aux.body);
+  const items = records.map((r) => ({
+    term: r.name,
+    href: `/t/${slug}/aux/glossary/#${r.slug}`,
+  }));
+  items.sort((a, b) => b.term.length - a.term.length);
+  return items;
+}
+
 async function readFileOrThrow(file: string, label: string): Promise<string> {
   try {
     return await fs.readFile(file, "utf8");
@@ -76,8 +162,29 @@ async function readFileOrThrow(file: string, label: string): Promise<string> {
 async function readSectionFile(file: string, label: string): Promise<SectionFile> {
   const text = await readFileOrThrow(file, label);
   const parsed = matter(text);
-  const fm = parsed.data as SectionFrontmatter;
+  const fm = normalizeFrontmatter(parsed.data as Record<string, unknown>);
   return { frontmatter: fm, body: parsed.content };
+}
+
+function normalizeFrontmatter(raw: Record<string, unknown>): SectionFrontmatter {
+  return {
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? ""),
+    summary: String(raw.summary ?? ""),
+    related: stringArray(raw.related),
+    keyIdea: raw.key_idea !== undefined ? String(raw.key_idea) : undefined,
+    watchOut: stringArray(raw.watch_out),
+    seamsTouched: stringArray(raw.seams_touched),
+    prerequisites: stringArray(raw.prerequisites),
+    next: stringArray(raw.next),
+  };
+}
+
+function stringArray(raw: unknown): string[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (Array.isArray(raw)) return raw.map(String);
+  // Single string is also accepted (e.g., `next: foo/bar`).
+  return [String(raw)];
 }
 
 function normalizeTutorial(raw: Record<string, unknown>, slug: string): Tutorial {
@@ -91,7 +198,24 @@ function normalizeTutorial(raw: Record<string, unknown>, slug: string): Tutorial
     source: raw.source as Tutorial["source"],
     components: components.map(normalizeComponent),
     crossRefs: normalizeCrossRefs(raw.cross_refs),
+    aux: normalizeAux(raw.aux),
   };
+}
+
+function normalizeAux(raw: unknown): AuxEntry[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const entries: AuxEntry[] = [];
+  for (const r of raw) {
+    const item = r as Record<string, unknown>;
+    const id = String(item.id ?? "");
+    if (!AUX_IDS.includes(id as AuxId)) continue;
+    entries.push({
+      id: id as AuxId,
+      title: String(item.title ?? id),
+      summary: String(item.summary ?? ""),
+    });
+  }
+  return entries.length > 0 ? entries : undefined;
 }
 
 function normalizeCrossRefs(raw: unknown): CrossRef[] | undefined {
