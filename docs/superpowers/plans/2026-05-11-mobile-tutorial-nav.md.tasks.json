@@ -1,0 +1,19 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-11-mobile-tutorial-nav.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Add mobile drawer for tutorial nav",
+      "status": "completed",
+      "description": "**Goal:** Sidebar collapses on mobile into a slide-in drawer triggered from a sticky top bar; desktop layout is byte-identical above `lg:`.\n\n**Files:**\n- Create: `components/TutorialNavMobile.tsx`\n- Modify: `app/t/[slug]/layout.tsx`\n\n```json:metadata\n{\"files\": [\"components/TutorialNavMobile.tsx\", \"app/t/[slug]/layout.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"Sticky top bar visible < 1024px with All tutorials link + Contents button\", \"Contents button opens left-slide drawer with TutorialNav inside\", \"Drawer closes on backdrop tap, ESC, and link tap\", \"Above 1024px: no mobile bar, sidebar unchanged at 16rem\", \"Body scroll locked while drawer open\", \"npm run build passes\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Offset quiz progress bar below mobile trigger",
+      "status": "completed",
+      "blockedBy": [1],
+      "description": "**Goal:** Quiz page's sticky progress bar no longer collides with the new mobile trigger bar; desktop position unchanged.\n\n**Files:**\n- Modify: `components/Quiz.tsx:134`\n\n```json:metadata\n{\"files\": [\"components/Quiz.tsx\"], \"verifyCommand\": \"npm run dev (manual browser check)\", \"acceptanceCriteria\": [\"Below lg: progress bar at top-12, no overlap with trigger bar\", \"Above lg: progress bar at top-0, unchanged from baseline\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-11T-after-execution"
+}

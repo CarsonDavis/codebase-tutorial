@@ -131,7 +131,7 @@ function ProgressBar({
 }) {
   const pct = total === 0 ? 0 : Math.round((answered / total) * 100);
   return (
-    <div className="sticky top-0 z-10 -mx-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elev)] px-4 py-3 backdrop-blur">
+    <div className="sticky top-12 z-10 -mx-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elev)] px-4 py-3 backdrop-blur lg:top-0">
       <div className="flex items-center justify-between gap-4">
         <div className="text-sm text-[var(--color-fg-muted)]">
           <span className="font-medium text-[var(--color-fg)]">{answered}</span>
