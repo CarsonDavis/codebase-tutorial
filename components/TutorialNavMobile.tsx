@@ -71,6 +71,7 @@ export function TutorialNavMobile({ slug, components, aux, hasQuiz }: Props) {
               components={components}
               aux={aux}
               hasQuiz={hasQuiz}
+              hideHomeLink
             />
           </aside>
         </>

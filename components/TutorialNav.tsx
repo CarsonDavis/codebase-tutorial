@@ -9,20 +9,24 @@ interface Props {
   components: Component[];
   aux?: AuxEntry[];
   hasQuiz?: boolean;
+  /** Suppress the "All tutorials" back-link — the mobile drawer renders that link in its own trigger bar. */
+  hideHomeLink?: boolean;
 }
 
-export function TutorialNav({ slug, components, aux, hasQuiz }: Props) {
+export function TutorialNav({ slug, components, aux, hasQuiz, hideHomeLink }: Props) {
   const pathname = usePathname();
   const overviewHref = `/t/${slug}/`;
 
   return (
     <nav className="text-sm">
-      <Link
-        href="/"
-        className="block text-xs uppercase tracking-wide text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
-      >
-        ← All tutorials
-      </Link>
+      {!hideHomeLink && (
+        <Link
+          href="/"
+          className="block text-xs uppercase tracking-wide text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+        >
+          ← All tutorials
+        </Link>
+      )}
 
       <Link
         href={overviewHref}
