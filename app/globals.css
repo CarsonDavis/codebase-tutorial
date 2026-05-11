@@ -96,19 +96,69 @@ a { color: var(--color-accent); }
 }
 .prose .callout[data-callout="seam"] > .callout-label { color: var(--color-seam-label); }
 
-/* Glossary auto-link: dotted underline, low visual weight. The link itself takes
-   the reader to the glossary entry; the title attribute (set by the markdown
-   pipeline) gives a native browser tooltip. */
+/* Glossary auto-link: rendered as a <button> by the markdown pipeline; hover/focus
+   reveals a popover with the rendered definition (wired by GlossaryPopovers). The
+   button reset below makes the trigger visually indistinguishable from inline text
+   carrying a dotted underline. */
 .prose .glossary-link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
   color: inherit;
   text-decoration: none;
   border-bottom: 1px dotted var(--color-fg-muted);
+  cursor: help;
   transition: border-color 120ms ease, color 120ms ease;
 }
-.prose .glossary-link:hover {
+.prose .glossary-link:hover,
+.prose .glossary-link:focus-visible {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
+  outline: none;
 }
+
+/* Container for the page's hidden popovers. Sits at the end of the article body so
+   it doesn't end up inside a <p>, which can't legally contain block elements. */
+.glossary-popovers { display: contents; }
+
+/* Native popover shown in the browser's top layer. Position is set inline by JS
+   (GlossaryPopovers) before showPopover() is called. */
+.glossary-popover {
+  position: fixed;
+  margin: 0;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 1rem 1.1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elev);
+  color: var(--color-fg);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.glossary-popover-body > :first-child { margin-top: 0; }
+.glossary-popover-body > :last-child  { margin-bottom: 0; }
+.glossary-popover-body code {
+  background: var(--color-bg);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.glossary-popover-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.glossary-popover-link:hover { text-decoration: underline; }
 
 /* Quiz options. Four states drive the visual treatment: pending (clickable),
    correct (the right answer, revealed after pick), wrong (the user's incorrect

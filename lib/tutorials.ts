@@ -3,6 +3,7 @@ import path from "node:path";
 import yaml from "js-yaml";
 import matter from "gray-matter";
 import GithubSlugger from "github-slugger";
+import { renderInlineMarkdown } from "./markdown";
 import type {
   Tutorial,
   Component,
@@ -16,6 +17,18 @@ import type {
   QuizOptionId,
   QuizTopic,
 } from "./types";
+
+/**
+ * One glossary term, ready for auto-linking and inline popover rendering. `definitionHtml`
+ * is the term's body pre-rendered to HTML via `renderInlineMarkdown` (no callouts, no
+ * recursive glossary auto-linking, no shiki) — exactly what the popover body needs.
+ */
+export interface GlossaryEntry {
+  term: string;
+  slug: string;
+  href: string;
+  definitionHtml: string;
+}
 
 const AUX_IDS: AuxId[] = ["glossary", "characters", "decisions", "seams"];
 
@@ -133,21 +146,27 @@ export function parseAuxRecords(body: string): AuxRecord[] {
 }
 
 /**
- * Build the glossary auto-link index for a tutorial: maps each term name to its
- * anchor href on the glossary page. Returns an empty map if no glossary aux page
- * exists. Sorted longest-first so multi-word terms are matched before sub-strings.
+ * Build the glossary auto-link index for a tutorial. Each entry carries the term, its
+ * anchor href on the glossary page, the slug used for popover IDs, and the rendered
+ * definition HTML (for inline popovers on glossary terms in prose). Returns an empty
+ * array if no glossary aux page exists. Sorted longest-first so multi-word terms are
+ * matched before sub-strings.
  */
 export async function loadGlossaryIndex(
   rootDir: string,
   slug: string,
-): Promise<Array<{ term: string; href: string }>> {
+): Promise<GlossaryEntry[]> {
   const aux = await loadAux(rootDir, slug, "glossary");
   if (!aux) return [];
   const records = parseAuxRecords(aux.body);
-  const items = records.map((r) => ({
-    term: r.name,
-    href: `/t/${slug}/aux/glossary/#${r.slug}`,
-  }));
+  const items = await Promise.all(
+    records.map(async (r) => ({
+      term: r.name,
+      slug: r.slug,
+      href: `/t/${slug}/aux/glossary/#${r.slug}`,
+      definitionHtml: await renderInlineMarkdown(r.body),
+    })),
+  );
   items.sort((a, b) => b.term.length - a.term.length);
   return items;
 }

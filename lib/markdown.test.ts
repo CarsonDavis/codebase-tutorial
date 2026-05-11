@@ -174,18 +174,33 @@ describe("renderMarkdown — callouts", () => {
 });
 
 describe("renderMarkdown — glossary auto-linking", () => {
-  it("links the first occurrence of a glossary term", async () => {
+  const entry = (term: string, slug: string, definition = `<p>${term} def</p>`) => ({
+    term,
+    slug,
+    href: `/t/example/aux/glossary/#${slug}`,
+    definitionHtml: definition,
+  });
+
+  it("emits a button + popover container for the first occurrence of a term", async () => {
     const body = `The L_ singleton is central. Later, L_ is mentioned again.`;
     const { html } = await renderMarkdown(body, {
       slug: "example",
       currentComponent: "frontend",
-      glossary: [{ term: "L_", href: "/t/example/aux/glossary/#l_" }],
+      glossary: [entry("L_", "l_", "<p>The global layers map.</p>")],
     });
-    // Only the first L_ should be a link.
-    const matches = html.match(/<a [^>]*data-glossary="L_"/g) ?? [];
+    // Only the first L_ becomes a button.
+    const matches = html.match(/<button [^>]*data-glossary="L_"/g) ?? [];
     expect(matches.length).toBe(1);
+    expect(html).toContain('popovertarget="gl-l_"');
     expect(html).toContain("glossary-link");
+    // No stray href on the button.
+    expect(html).not.toMatch(/<button [^>]*href=/);
+    // A popover element exists for the term with the rendered definition.
+    expect(html).toContain('<div id="gl-l_" popover="auto" class="glossary-popover">');
+    expect(html).toContain("The global layers map");
+    // The popover contains the "Open in glossary →" link.
     expect(html).toContain('href="/t/example/aux/glossary/#l_"');
+    expect(html).toContain("Open in glossary");
   });
 
   it("respects word boundaries (skips substrings)", async () => {
@@ -193,11 +208,11 @@ describe("renderMarkdown — glossary auto-linking", () => {
     const { html } = await renderMarkdown(body, {
       slug: "example",
       currentComponent: "frontend",
-      glossary: [{ term: "Mission", href: "/x" }],
+      glossary: [entry("Mission", "mission")],
     });
     expect(html).toContain('data-glossary="Mission"');
-    // Make sure "commission" was not turned into a link.
-    expect(html).not.toMatch(/com<a [^>]*data-glossary/);
+    // Make sure "commission" was not turned into a button.
+    expect(html).not.toMatch(/com<button [^>]*data-glossary/);
   });
 
   it("does not link inside headings", async () => {
@@ -205,9 +220,9 @@ describe("renderMarkdown — glossary auto-linking", () => {
     const { html } = await renderMarkdown(body, {
       slug: "example",
       currentComponent: "frontend",
-      glossary: [{ term: "L_", href: "/x" }],
+      glossary: [entry("L_", "l_")],
     });
-    // Heading text stays plain; body picks up the link.
+    // Heading text stays plain; body picks up the button.
     expect(html).toMatch(/<h2[^>]*>L_<\/h2>/);
     expect(html).toContain('data-glossary="L_"');
   });
@@ -217,10 +232,32 @@ describe("renderMarkdown — glossary auto-linking", () => {
     const { html } = await renderMarkdown(body, {
       slug: "example",
       currentComponent: "frontend",
-      glossary: [{ term: "L_", href: "/x" }],
+      glossary: [entry("L_", "l_")],
     });
     // Inline code stays bare.
     expect(html).toContain("<code>L_</code>");
     expect(html).not.toContain('data-glossary="L_"');
+  });
+
+  it("omits the popover container when no terms are auto-linked", async () => {
+    const body = `No glossary terms here at all.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [entry("L_", "l_")],
+    });
+    expect(html).not.toContain("glossary-popovers");
+    expect(html).not.toContain('<div id="gl-');
+  });
+
+  it("emits one popover per used term and skips unused ones", async () => {
+    const body = `L_ appears but not the other one.`;
+    const { html } = await renderMarkdown(body, {
+      slug: "example",
+      currentComponent: "frontend",
+      glossary: [entry("L_", "l_"), entry("Map_", "map_")],
+    });
+    expect(html).toContain('id="gl-l_"');
+    expect(html).not.toContain('id="gl-map_"');
   });
 });

@@ -25,10 +25,12 @@ export interface RenderContext {
   currentSub?: string;
   /**
    * Optional glossary terms for auto-linking. The first occurrence of each term in the
-   * rendered prose becomes a hover-popover link to the glossary entry. Pass items in
-   * any order — the renderer sorts longest-first internally.
+   * rendered prose becomes a hover-popover button. Each entry carries its slug (used
+   * for the `popovertarget` id), its glossary-page href (used inside the popover for
+   * "Open in glossary →"), and its pre-rendered definitionHtml (the popover body).
+   * Pass items in any order — the renderer sorts longest-first internally.
    */
-  glossary?: Array<{ term: string; href: string }>;
+  glossary?: Array<{ term: string; slug: string; href: string; definitionHtml: string }>;
 }
 
 export interface RenderResult {
@@ -79,6 +81,9 @@ export async function renderMarkdown(
 ): Promise<RenderResult> {
   const tocCollector: TocEntry[] = [];
   const glossary = (ctx.glossary ?? []).slice().sort((a, b) => b.term.length - a.term.length);
+  // Slugs of glossary terms actually auto-linked on this page. The rehype pass below
+  // populates this; renderMarkdown then emits one popover element per slug at the end.
+  const usedSlugs = new Set<string>();
 
   const file = await unified()
     .use(remarkParse)
@@ -90,14 +95,43 @@ export async function renderMarkdown(
     .use(remarkRehype)
     .use(rehypeSlug)
     .use(rehypeShiki, { theme: "dark-plus" })
-    .use(rehypeWrapGlossaryLinks)
+    .use(rehypeMarkGlossaryButtons(usedSlugs))
     .use(rehypeStringify)
     .process(body);
 
   const slugger = new GithubSlugger();
   const toc = tocCollector.map((entry) => ({ ...entry, slug: slugger.slug(entry.text) }));
 
-  return { html: String(file), toc };
+  const html = String(file) + renderGlossaryPopovers(glossary, usedSlugs);
+  return { html, toc };
+}
+
+/**
+ * Build the hidden container of `<div popover>` elements for the glossary terms
+ * actually used on this page. The container lives outside any `<p>` (which can't
+ * legally contain block elements) and uses `not-prose` so typography styles don't
+ * leak into the popover body.
+ */
+function renderGlossaryPopovers(
+  glossary: RenderContext["glossary"],
+  usedSlugs: Set<string>,
+): string {
+  if (!glossary || usedSlugs.size === 0) return "";
+  const popovers = glossary
+    .filter((g) => usedSlugs.has(g.slug))
+    .map(
+      (g) =>
+        `<div id="gl-${escapeAttr(g.slug)}" popover="auto" class="glossary-popover">` +
+        `<div class="glossary-popover-body">${g.definitionHtml}</div>` +
+        `<a class="glossary-popover-link" href="${escapeAttr(g.href)}">Open in glossary →</a>` +
+        `</div>`,
+    )
+    .join("");
+  return `<div class="glossary-popovers not-prose">${popovers}</div>`;
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -233,12 +267,16 @@ function resolveRelativeMd(href: string, ctx: RenderContext): string {
   return `/t/${ctx.slug}/${componentId}/${subId}/${fragment}`;
 }
 
+type GlossaryTerm = { term: string; slug: string; href: string; definitionHtml: string };
+
 /**
  * Auto-link the first occurrence of each glossary term in the rendered prose. Skips
- * code, inline code, headings, and existing links. Marks the produced link node with
- * `data-glossary` so the rehype pass can attach the popover affordance.
+ * code, inline code, headings, and existing links. Emits a mdast `link` node whose
+ * `data.hName` switches it to a `<button>` at hast time, carrying the attributes the
+ * native HTML popover API needs (`popovertarget`) plus a `data-glossary` hook for the
+ * client-side hover wiring.
  */
-function autoLinkGlossary(terms: Array<{ term: string; href: string }>) {
+function autoLinkGlossary(terms: GlossaryTerm[]) {
   return () => (tree: MdastRoot) => {
     if (terms.length === 0) return;
     const used = new Set<string>();
@@ -269,12 +307,12 @@ function autoLinkGlossary(terms: Array<{ term: string; href: string }>) {
 
 function matchFirstTerm(
   text: string,
-  terms: Array<{ term: string; href: string }>,
+  terms: GlossaryTerm[],
   used: Set<string>,
 ): PhrasingContent[] | null {
   // Find the leftmost match across all unused terms; ties broken by longest term.
   let bestIdx = -1;
-  let bestTerm: { term: string; href: string } | null = null;
+  let bestTerm: GlossaryTerm | null = null;
 
   for (const t of terms) {
     if (used.has(t.term)) continue;
@@ -296,12 +334,24 @@ function matchFirstTerm(
   const out: PhrasingContent[] = [];
   if (bestIdx > 0) out.push({ type: "text", value: text.slice(0, bestIdx) });
   const matched = text.slice(bestIdx, bestIdx + bestTerm.term.length);
+  // mdast has no native "button" node. We emit a `link` node so remark-rehype's default
+  // phrasing-content handling picks it up, then use `data.hName` / `data.hProperties` to
+  // override the rendered element. `url` is set to "" because the trigger no longer
+  // navigates — the post-rehype pass strips the resulting empty href.
+  const popoverId = `gl-${bestTerm.slug}`;
   const link: MdastLink = {
     type: "link",
-    url: bestTerm.href,
+    url: "",
     title: null,
     children: [{ type: "text", value: matched }],
-    data: { hProperties: { "data-glossary": bestTerm.term } },
+    data: {
+      hName: "button",
+      hProperties: {
+        type: "button",
+        "data-glossary": bestTerm.term,
+        popovertarget: popoverId,
+      },
+    },
   };
   out.push(link);
   const after = text.slice(bestIdx + bestTerm.term.length);
@@ -334,19 +384,28 @@ function findWordBoundaryMatch(text: string, term: string): number {
 }
 
 /**
- * After rehype produces HTML, find every `<a data-glossary="…">` and add the
- * `glossary-link` class so CSS can render the underline-style affordance.
+ * Mark the auto-linked glossary buttons in the produced hast tree. Adds the
+ * `glossary-link` class, strips the empty `href` attribute that remark-rehype emits for
+ * `<button>`-flavored link nodes, and records each used term's slug in `usedSlugs` so
+ * the caller can emit matching `<div popover>` elements.
  */
-function rehypeWrapGlossaryLinks() {
-  return (tree: HastRoot) => {
+function rehypeMarkGlossaryButtons(usedSlugs: Set<string>) {
+  return () => (tree: HastRoot) => {
     visit(tree, "element", (node: HastElement) => {
-      if (node.tagName !== "a") return;
+      if (node.tagName !== "button") return;
       const props = (node.properties ?? {}) as HastProps;
       if (!("data-glossary" in props)) return;
+      // Drop the href attribute that the link → button override carries through.
+      delete (props as Record<string, unknown>).href;
       const cls = props.className;
       const existing = Array.isArray(cls) ? cls.map(String) : cls ? [String(cls)] : [];
       props.className = [...existing, "glossary-link"];
       node.properties = props;
+      // popovertarget is `gl-<slug>`; strip the prefix to get the slug.
+      const target = props.popovertarget;
+      if (typeof target === "string" && target.startsWith("gl-")) {
+        usedSlugs.add(target.slice(3));
+      }
     });
   };
 }
