@@ -16,15 +16,18 @@ interface Props {
 export function TutorialNav({ slug, components, aux, hasQuiz, hideHomeLink }: Props) {
   const pathname = usePathname();
   const overviewHref = `/t/${slug}/`;
+  const onOverview = pathname === overviewHref;
+  const backHref = onOverview ? "/" : overviewHref;
+  const backLabel = onOverview ? "← All tutorials" : "← Overview";
 
   return (
     <nav className="text-sm">
       {!hideHomeLink && (
         <Link
-          href="/"
+          href={backHref}
           className="block text-xs uppercase tracking-wide text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
         >
-          ← All tutorials
+          {backLabel}
         </Link>
       )}
 

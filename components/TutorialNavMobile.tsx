@@ -16,6 +16,10 @@ interface Props {
 export function TutorialNavMobile({ slug, components, aux, hasQuiz }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const overviewHref = `/t/${slug}/`;
+  const onOverview = pathname === overviewHref;
+  const backHref = onOverview ? "/" : overviewHref;
+  const backLabel = onOverview ? "← All tutorials" : "← Overview";
 
   useEffect(() => {
     setOpen(false);
@@ -39,10 +43,10 @@ export function TutorialNavMobile({ slug, components, aux, hasQuiz }: Props) {
     <div className="lg:hidden">
       <div className="fixed inset-x-0 top-0 z-30 flex h-12 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 px-4 backdrop-blur">
         <Link
-          href="/"
+          href={backHref}
           className="text-xs uppercase tracking-wide text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
         >
-          ← All tutorials
+          {backLabel}
         </Link>
         <button
           type="button"
