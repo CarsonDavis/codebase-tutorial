@@ -1,0 +1,394 @@
+slug: mmgis
+title: "MMGIS — concepts quiz"
+summary: Twelve big-picture questions on how MMGIS is shaped — architecture, decisions, seams, interactions, and tradeoffs. Each question has a review that explains why the answer is right and what each wrong pick would have implied.
+generated_at: 2026-05-11T00:00:00Z
+generator_version: 0.1.0
+
+questions:
+  - id: deployment-shape
+    topic: architecture
+    prompt: |
+      What is the deployment shape of MMGIS in production?
+    options:
+      - id: a
+        text: |
+          One Express process serves Essence, Configure, and the API from a single origin; Postgres backs all data; the optional Python sidecars are proxied through the same origin.
+      - id: b
+        text: |
+          Two Node services — one for Essence, one for Configure — share a Postgres database and communicate via a message bus.
+      - id: c
+        text: |
+          Essence and Configure run as separate Next.js apps each fronted by their own load balancer, sharing a backend microservice tier.
+      - id: d
+        text: |
+          A Docker Compose stack where every component (Essence, Configure, the backend, Postgres, TiTiler) is independently browser-reachable.
+    answer: a
+    review: |
+      MMGIS is one Express process that hosts three browser apps (Essence, the Configure admin SPA at `/configure`, and the Jekyll docs site) and the entire `/api/*` surface. In production they share an origin, which is why CORS only matters for iframe embedders. The Python sidecars are optional and only reachable via Express's `adjacent-servers-proxy.js` — the browser never talks to them directly. Holding "one origin, multiple faces" in your head makes auth, routing, and the proxy layout fall into place.
+    distractor_notes:
+      a: |
+        The single-origin, single-process shape is what makes session cookies, admin gating, and sidecar proxying all hang together.
+      b: |
+        There is no message bus between Essence and Configure — they share state through the database via the backend's feature modules, not via a queue.
+      c: |
+        MMGIS does not use Next.js or per-app load balancers; the SPA shell is Pug-rendered by Express and the bundles are static assets.
+      d: |
+        Compose profiles exist, but only the Python sidecars are containers MMGIS proxies *through*; the backend itself is not behind a sibling reverse proxy.
+    grounded_in:
+      - backend-api/server-bootstrap
+      - adjacent-servers
+
+  - id: configure-to-essence-handoff
+    topic: seams
+    prompt: |
+      Configure is a separate React 17 SPA and Essence is a React 16 SPA — they share no bundle and no React tree. So how does Essence actually learn what missions, layers, and tools to render?
+    options:
+      - id: a
+        text: |
+          Configure writes a JSON config blob into Postgres through `/api/configure/*`; Essence reads that blob at boot and hands it to `L_.init(config)`.
+      - id: b
+        text: |
+          Configure broadcasts updates over WebSocket; Essence applies them in-memory and persists them client-side.
+      - id: c
+        text: |
+          Essence reads YAML files from the plugin-drop directory at boot, and Configure rewrites them.
+      - id: d
+        text: |
+          Configure and Essence share a Redux store mounted in both apps.
+    answer: a
+    review: |
+      The configure-essence seam carries exactly one thing: a JSON config blob, persisted via the backend's feature modules and loaded by Essence at boot. That is *all* the two SPAs share — no React tree, no bundle, not even a React major version. If a field you expect to see is missing on one side, the seam is the schema in `configure/src/metaconfigs/`.
+    distractor_notes:
+      a: |
+        This is the seam. Knowing it is one-way (Configure writes, Essence reads) and database-mediated saves hours of frontend debugging.
+      b: |
+        There is a WebSocket, but it's for Draw collaboration and presence — config flows through the database, not the socket.
+      c: |
+        The plugin-drop directory is a separate seam for *code*, not data. It does not carry mission config.
+      d: |
+        The two SPAs cannot share a Redux store — Redux Toolkit lives only in Configure (React 17, MUI v5); Essence is React 16 with jQuery-era state in `L_`.
+    grounded_in:
+      - configure-spa
+      - frontend-essence/core-runtime
+
+  - id: webpack-vs-vite
+    topic: decisions
+    prompt: |
+      What forces Essence to be bundled by a custom CRA-eject Webpack 5 pipeline rather than something simpler like plain Vite or stock CRA?
+    options:
+      - id: a
+        text: |
+          Cesium needs `CopyWebpackPlugin` for `Workers/`/`Assets/`/`Widgets/` and a `CESIUM_BASE_URL` `DefinePlugin`, the plugin-drop convention needs a pre-webpack code-generation step, and `resolve.fallback` lets the build explicitly disable Node-core polyfill shims.
+      - id: b
+        text: |
+          Webpack is required because Essence uses TypeScript decorators at runtime, which Vite cannot transpile.
+      - id: c
+        text: |
+          The codebase needs server-side rendering, which only Webpack supports out of the box.
+      - id: d
+        text: |
+          Webpack is mandatory for serving Mapbox Vector Tiles to the deck.gl adapter.
+    answer: a
+    review: |
+      Three concerns, all simultaneously, drove the team to accept a hand-rolled Webpack 5 config: Cesium's workers and base URL, the plugin-drop convention that requires `updateTools()`/`updateComponents()` to run *before* webpack, and explicit control over which Node-core polyfills get shimmed. Switching to Vite would mean reimplementing all three. The cost is "every Essence build is now a custom config", and the team took it.
+    distractor_notes:
+      a: |
+        This is the triad to remember — Cesium, plugin-drop codegen, polyfill control — and it's why Vite hasn't displaced Webpack here.
+      b: |
+        Essence is JavaScript, not TypeScript, and decorators are not the issue.
+      c: |
+        Essence is purely client-rendered; the Pug template that serves it is the only "server" rendering involved.
+      d: |
+        deck.gl renders MVT in WebGL without a special bundler — the bundler choice has nothing to do with it.
+    grounded_in:
+      - build-and-bundling
+
+  - id: two-map-engines
+    topic: decisions
+    prompt: |
+      Why does Essence keep two 2D map engines — Leaflet and deck.gl — instead of consolidating on one?
+    options:
+      - id: a
+        text: |
+          Leaflet handles legacy slippy-map mission-ops UIs and a decade of code that depends on its API; deck.gl is the in-flight migration target for high-feature-count WebGL2 layers. An `IMapEngine` facade hides the choice from most callers, but scattered `if engine !== LEAFLET return` early-exits in `Map_.js` reveal the migration is partial.
+      - id: b
+        text: |
+          Leaflet is used in development for fast iteration; deck.gl is used in production for performance.
+      - id: c
+        text: |
+          Leaflet renders the 2D viewport and deck.gl renders the 3D globe — they serve different geometries entirely.
+      - id: d
+        text: |
+          Each mission picks one engine in its mission config; only one is active per deployment.
+    answer: a
+    review: |
+      MMGIS is mid-migration. The Leaflet path can't be removed without breaking a decade of mission-ops code and external integrations; the deck.gl path exists because Leaflet can't handle the layer counts and styling the team wants going forward. Both are alive, both are real, and the facade is *almost* — but not quite — enough that callers can ignore the choice.
+    distractor_notes:
+      a: |
+        Recognizing this as a migration in flight (not a clean abstraction) explains the `if engine !== LEAFLET return` shapes you'll see everywhere.
+      b: |
+        There is no dev/prod split — both engines are deployable in both environments.
+      c: |
+        The 3D globe is `Globe_`, a separate Cesium-based viewport — neither Leaflet nor deck.gl renders it.
+      d: |
+        Mission config can influence engine choice, but the codebase keeps both engines compiled in and bridges them at runtime, not at config time.
+    grounded_in:
+      - frontend-essence/core-runtime
+
+  - id: why-separate-configure
+    topic: decisions
+    prompt: |
+      Why is Configure built as a separate React 17 SPA at `/configure` rather than as another panel inside Essence?
+    options:
+      - id: a
+        text: |
+          Different audience and lifecycle — admin-only, edited rarely vs. user-facing, loaded constantly — plus keeping the bundles separate means admin-only code never gets shipped into a regular user's session even if permissions fail.
+      - id: b
+        text: |
+          Configure has to run inside an isolated browser process for security; iframing it inside Essence would not be sufficient.
+      - id: c
+        text: |
+          React 17's concurrent features are required for the admin forms, and mixing them with Essence's React 16 was technically impossible.
+      - id: d
+        text: |
+          Configure is rendered server-side; Essence is rendered client-side; that requires distinct apps.
+    answer: a
+    review: |
+      The split is about bundle isolation and audience separation. Configure can ship React 17, MUI v5, Redux Toolkit, and `react-scripts` without dragging that weight into the bundle every map user loads. The harder-to-articulate win is that an admin-permission failure on `/configure` literally cannot leak admin-only code — the bundles never overlap on disk.
+    distractor_notes:
+      a: |
+        The bundle-isolation framing is the load-bearing one — it's a deployment and shipping-weight argument, not a runtime one.
+      b: |
+        There is no separate-process isolation; both SPAs run in the user's browser like any web app.
+      c: |
+        React 17 isn't *required* — it's just convenient to use here because Configure has its own build.
+      d: |
+        Both apps are client-rendered; the Pug template that serves Essence is not SSR in the React sense.
+    grounded_in:
+      - configure-spa
+
+  - id: auth-shapes
+    topic: seams
+    prompt: |
+      How does MMGIS authenticate requests crossing the browser-backend seam?
+    options:
+      - id: a
+        text: |
+          Session cookies (`MMGISSession`) for humans, backed by a Postgres session store; long-term Bearer tokens in the `Authorization` header for programmatic access.
+      - id: b
+        text: |
+          JWTs with refresh tokens only — cookies are not used.
+      - id: c
+        text: |
+          HTTP Basic Auth on every request.
+      - id: d
+        text: |
+          MMGIS has no local auth; all access control is delegated to an external SSO that must front the deployment.
+    answer: a
+    review: |
+      Two shapes coexist for two audiences. Humans get a session cookie persisted by `connect-pg-simple` so restarts don't log everyone out; programmatic clients send bearer tokens in a header so they don't need a cookie jar. The `CSSO` integration is an *optional* third path — when `AUTH=csso` is set — but the local cookie/token pair is the default.
+    distractor_notes:
+      a: |
+        The two-shapes pattern is also why CORS is on but production is single-origin — cross-origin only matters for iframe embedders.
+      b: |
+        JWTs are not the MMGIS auth model — long-term tokens are bearer-format but persisted server-side, not stateless JWTs.
+      c: |
+        Basic Auth never appears in MMGIS's auth path.
+      d: |
+        SSO (CSSO) is optional, not required — without it, local accounts and the cookie/token pair are the auth path.
+    grounded_in:
+      - backend-api/auth-and-sessions
+
+  - id: L_-pattern
+    topic: interactions
+    prompt: |
+      What is `L_` in the Essence codebase, and how do other modules interact with it?
+    options:
+      - id: a
+        text: |
+          A global singleton map state — owning mission, view, planet radius, and the layer registry — that nearly every Essence module reads from and few explicitly tell what to do.
+      - id: b
+        text: |
+          A Redux-style store with strict action/reducer discipline; modules mutate it only by dispatching typed actions.
+      - id: c
+        text: |
+          A React Context provider; modules call a `useL_()` hook from within function components to read state.
+      - id: d
+        text: |
+          A class each tool instantiates locally; modules pass their `L_` instance to neighbors as a constructor argument.
+    answer: a
+    review: |
+      `L_` is the omniscient narrator — a global object exported from `Basics/Layers_/Layers_.js` that owns the map's mission, view, and full layer registry. The mental model "if something on the page knows something it shouldn't, it asked `L_`" is correct surprisingly often, and it explains why Essence does not look like an idiomatic React app — most state lives on this singleton, not in component trees.
+    distractor_notes:
+      a: |
+        Recognizing `L_` as a read-mostly singleton (not a managed store) is the key to reading Essence without flinching.
+      b: |
+        There is no Redux discipline in Essence — Redux Toolkit lives in Configure, not here.
+      c: |
+        Essence is React 16 with jQuery-era state on `L_` — there is no `useL_()` hook, and most modules aren't function components.
+      d: |
+        `L_` is global. Modules import it; they do not receive it as an argument.
+    grounded_in:
+      - frontend-essence/core-runtime
+
+  - id: mmgisapi-dual-role
+    topic: interactions
+    prompt: |
+      What roles does the `mmgisAPI` object play in the system?
+    options:
+      - id: a
+        text: |
+          Two: (1) the public, JSDoc'd surface that iframe embedders and plugins are allowed to depend on, AND (2) the internal mitt-based pub/sub bus that inner Essence modules use to communicate without import-coupling.
+      - id: b
+        text: |
+          Only the public-facing surface — internal Essence modules import each other directly.
+      - id: c
+        text: |
+          An HTTP proxy translating between Essence and the backend feature modules.
+      - id: d
+        text: |
+          A WebSocket message router for real-time Draw collaboration.
+    answer: a
+    review: |
+      `mmgisAPI` is a diplomat in two directions at once. Outward, it's the stable contract embedders depend on — anything not on it is fair game to change. Inward, the same object hosts the mitt event/request bus tools use to talk to each other without import cycles. Two surfaces, one file — which is why edits here ripple in both directions and need care.
+    distractor_notes:
+      a: |
+        The dual role is the surprising part. Treating it as only an embed surface misses half its load.
+      b: |
+        Plugins and tools commonly route through the mitt bus on `mmgisAPI` instead of import-coupling — the file is more central than it looks.
+      c: |
+        The HTTP boundary is the Express backend, not `mmgisAPI`.
+      d: |
+        The WebSocket lives in the backend at `API/websocket.js`; `mmgisAPI` is a frontend-only object.
+    grounded_in:
+      - frontend-essence/mmgis-api
+
+  - id: plugin-drop-tradeoff
+    topic: tradeoffs
+    prompt: |
+      Why does MMGIS use a plugin-drop directory convention (e.g., `*Plugin-Tools*`) instead of a registry file that explicitly lists installed plugins?
+    options:
+      - id: a
+        text: |
+          Operators customize MMGIS for specific missions and do not want to upstream those changes. A registry file would merge-conflict on every pull from `master`; a gitignored naming convention lets an integrator drop a directory in, restart, and have the build pick it up without touching tracked source.
+      - id: b
+        text: |
+          Plugins are hot-reloaded at runtime; a registry file could not support live updates.
+      - id: c
+        text: |
+          Plugins are written in different languages and a single registry could not describe them all.
+      - id: d
+        text: |
+          The team prefers configuration-as-code, so they encode "what is loaded" as filesystem state to make it diffable.
+    answer: a
+    review: |
+      The convention is plumbing for a specific shipping model: MMGIS goes out as source to NASA-AMMOS operators who customize it for one mission and keep that work private. Anything that required editing a tracked file (like a registry) would create a merge conflict on every upstream pull. The cost the team accepts: no central list of what is loaded, and `src/pre/tools.js` is a generated artifact you can't read in tracked source.
+    distractor_notes:
+      a: |
+        The "ship-as-source-to-operators" framing explains MMGIS conventions you'll see again — gitignored Mission directories, env-driven config, plugin-drop everywhere.
+      b: |
+        Plugins are not hot-reloaded — restart is required to pick up a new plugin directory.
+      c: |
+        Plugins are JavaScript (frontend) or Node (backend), not polyglot — language diversity isn't the reason.
+      d: |
+        There *is* no central declarative manifest under git — the convention is the opposite of configuration-as-code in that sense.
+    grounded_in:
+      - build-and-bundling
+      - backend-api/feature-modules
+
+  - id: websocket-shape
+    topic: tradeoffs
+    prompt: |
+      Why is the MMGIS WebSocket a `noServer: true` upgrade attached to the main HTTP server, and why does it broadcast every message to every client?
+    options:
+      - id: a
+        text: |
+          Sharing the HTTP server inherits its TLS, hostname, and firewall posture; broadcast was sufficient because the only consumers (Draw collaboration, presence) filter on the client and the load profile didn't justify per-mission rooms.
+      - id: b
+        text: |
+          A separate WebSocket server on its own port would have required a separate TLS cert chain MMGIS does not maintain.
+      - id: c
+        text: |
+          Broadcast is required for Draw consistency — per-room messaging would create split-brain editing conflicts.
+      - id: d
+        text: |
+          The shape is a relic; the codebase is mid-migration to a Kafka-based pub/sub system.
+    answer: a
+    review: |
+      Both decisions are about minimum viable infrastructure. Attaching to the existing `server.on("upgrade", …)` means the socket gets the same TLS, the same hostname, and the same network rules as the API for free. Broadcast was good enough because the small set of consumers already filter on the client side — a per-mission room model exists in lots of WebSocket frameworks but here it wasn't worth the complexity.
+    distractor_notes:
+      a: |
+        Both halves are "we didn't need more, and not having more costs us nothing" — a useful pattern to recognize elsewhere in MMGIS too.
+      b: |
+        TLS termination is a deployment concern; nothing in the codebase forbids a separate cert chain.
+      c: |
+        Per-room messaging would not cause split-brain — Draw's consistency comes from the database, not the socket.
+      d: |
+        There is no Kafka migration in flight in this codebase.
+    grounded_in:
+      - backend-api/server-bootstrap
+
+  - id: feature-module-shape
+    topic: architecture
+    prompt: |
+      Every backend feature under `API/Backend/` follows the same shape. What is it, and what does it tell you about the backend?
+    options:
+      - id: a
+        text: |
+          Each feature is a directory with `models/`, `routes/`, and a `setup.js`. The `setup.js` exports lifecycle hooks (`onceInit`, `onceStarted`, `onceSynced`) which the bootstrap calls with a shared `s` toolkit — `s.app`, `s.ROOT_PATH`, auth guards like `s.ensureAdmin`, and helper middlewares.
+      - id: b
+        text: |
+          Each feature is a NestJS module decorated with `@Module`, `@Controller`, and `@Injectable` annotations; the framework discovers and wires them automatically.
+      - id: c
+        text: |
+          Each feature is a standalone microservice with its own `package.json` and entry point; the API gateway proxies to them.
+      - id: d
+        text: |
+          Each feature is a single file under `API/Backend/` exporting an Express router that mounts itself on `app` directly.
+    answer: a
+    review: |
+      The repeating `models`/`routes`/`setup.js` shape is the most important pattern in the backend — once you've read one feature module, you can read any of them. The `s` object handed to each lifecycle hook is the "toolkit": mounting `s.app`, prefixing with `s.ROOT_PATH`, gating with `s.ensureAdmin()` or `s.ensureUser()`, and stamping security headers via `s.checkHeadersCodeInjection` and `s.setContentType`. New backend code composes those primitives rather than reaching into Express directly.
+    distractor_notes:
+      a: |
+        Holding the `setup.js` lifecycle and the `s` toolkit in your head turns every backend feature into a five-minute read.
+      b: |
+        There is no NestJS — Express only, with this hand-rolled module convention.
+      c: |
+        There are no microservices; everything runs in the single Express process.
+      d: |
+        Some features fit in a single file, but the standard shape is a directory with a `setup.js` lifecycle, not a self-mounting router.
+    grounded_in:
+      - backend-api/feature-modules
+      - backend-api/server-bootstrap
+
+  - id: two-db-handles
+    topic: architecture
+    prompt: |
+      MMGIS keeps two database handles to one Postgres database — what are they, and why both?
+    options:
+      - id: a
+        text: |
+          A Sequelize instance in `API/connection.js` for table definitions, model hooks, the session store, and most spatial SQL (via `sequelize.query`); plus a `pg-promise` handle in `API/database.js` used by Draw for its bulk PostGIS writes.
+      - id: b
+        text: |
+          A Sequelize handle for the application schema and a Knex handle for the session store; the two cannot share a connection pool.
+      - id: c
+        text: |
+          A read-only replica handle and a read-write primary handle, split by query type rather than by code area.
+      - id: d
+        text: |
+          A handle for application Postgres and a separate handle for a standalone PostGIS server; the spatial database is physically separate.
+    answer: a
+    review: |
+      Sequelize is the general handle — it owns the model definitions, the `connect-pg-simple` session store, and almost all raw spatial queries (yes, raw SQL through `sequelize.query` is fine). The `pg-promise` handle in `API/database.js` is the exception, reached for primarily by the Draw module's routes. New code should follow the precedent of its neighbors rather than introducing a third handle.
+    distractor_notes:
+      a: |
+        Knowing which handle a feature uses before you start editing it saves you from accidentally adding the second when one was already at hand.
+      b: |
+        There is no Knex — both handles talk to the same Postgres pool, just through different libraries.
+      c: |
+        There is no read/write split; both handles point at the same primary.
+      d: |
+        There is one Postgres with the PostGIS extension installed via `init-db.js` — not two separate databases.
+    grounded_in:
+      - backend-api/feature-modules

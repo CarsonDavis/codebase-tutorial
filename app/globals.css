@@ -36,6 +36,15 @@
   --color-note-bg: #161a21;
   --color-note-border: #2c3340;
   --color-note-label: #a8b2c0;
+
+  /* Quiz feedback colors. Correct picks/answers reuse the seam teal palette so the
+     site keeps a single "good signal" hue; wrong picks get a discrete red. */
+  --color-correct-bg: #112a22;
+  --color-correct-border: #2b6b54;
+  --color-correct-label: #7fd6b8;
+  --color-wrong-bg: #2a1418;
+  --color-wrong-border: #6b3138;
+  --color-wrong-label: #f08a96;
 }
 
 html, body { background: var(--color-bg); color: var(--color-fg); }
@@ -100,3 +109,69 @@ a { color: var(--color-accent); }
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
+
+/* Quiz options. Four states drive the visual treatment: pending (clickable),
+   correct (the right answer, revealed after pick), wrong (the user's incorrect
+   pick), and muted (an unchosen wrong option after the question is answered). */
+.quiz-option {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-fg);
+}
+.quiz-option--pending:hover {
+  border-color: var(--color-accent);
+  background: rgba(122, 162, 255, 0.04);
+}
+.quiz-option--pending:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.quiz-option:disabled {
+  cursor: default;
+}
+.quiz-option--correct {
+  background: var(--color-correct-bg);
+  border-color: var(--color-correct-border);
+}
+.quiz-option--correct .quiz-option-letter {
+  background: var(--color-correct-border);
+  border-color: var(--color-correct-border);
+  color: var(--color-bg);
+}
+.quiz-option--correct .quiz-option-badge { color: var(--color-correct-label); }
+
+.quiz-option--wrong {
+  background: var(--color-wrong-bg);
+  border-color: var(--color-wrong-border);
+}
+.quiz-option--wrong .quiz-option-letter {
+  background: var(--color-wrong-border);
+  border-color: var(--color-wrong-border);
+  color: var(--color-bg);
+}
+.quiz-option--wrong .quiz-option-badge { color: var(--color-wrong-label); }
+
+.quiz-option--muted {
+  opacity: 0.65;
+}
+
+.quiz-option-letter {
+  border-color: var(--color-border);
+  color: var(--color-fg-muted);
+}
+
+/* Inline-rendered quiz HTML — keep code spans visible without the prose typography. */
+.quiz-inline code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.05em 0.35em;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+}
+.quiz-inline a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.quiz-inline strong { font-weight: 600; }

@@ -19,10 +19,12 @@ document. The full design rationale lives at
 
 ## Pipeline
 
-Four stages run in order. Outputs from each stage are persisted to disk so the pipeline
+Five stages run in order. Outputs from each stage are persisted to disk so the pipeline
 is debuggable and resumable. Stages 1–3 produce the structural tutorial; stage 4 is an
 additive polish pass that supplements existing content with cross-cutting addenda pages
-and frontmatter chrome. Stage 4 is optional — a tutorial without it still works.
+and frontmatter chrome; stage 5 writes a structured multiple-choice quiz that tests the
+reader's big-picture understanding. Stages 4 and 5 are optional and each may be re-run
+independently — a tutorial without them still works.
 
 ### Stage 1 — Survey (single agent, serial)
 
@@ -85,6 +87,25 @@ cheap, regenerating leaves is not.
 
 Output: four files under `aux/`, frontmatter touches on existing `.md` files, and an
 `aux:` block plus bumped `generator_version` in `tutorial.yaml`.
+
+### Stage 5 — Quizzer (single agent, serial, optional)
+
+Input: everything earlier stages produced — primarily `tutorial.yaml`, `intro.md`, and
+the four `aux/` addenda pages, with on-demand reads into components and the target
+repo for grounding.
+
+Job: write a single structured multiple-choice quiz that tests the reader's
+**big-picture** understanding of the codebase. Twelve questions, four options each,
+one best answer. Every question carries a review section that explains *why* the
+correct answer is right and per-option notes that explain *what each wrong pick would
+have implied*. The reader who fails a question and reads the review should walk away
+with the load-bearing concept.
+
+Stage 5 writes exactly one new file (`aux/quiz.yaml`) and modifies nothing earlier
+stages produced. The frontend does not yet render it; the quiz is authored as a
+structured artifact so a renderer can be added later.
+
+Output: `aux/quiz.yaml`.
 
 ---
 
@@ -253,6 +274,7 @@ public/tutorials/<slug>/
   aux/characters.md           # stage 4
   aux/decisions.md            # stage 4
   aux/seams.md                # stage 4
+  aux/quiz.yaml               # stage 5
 ```
 
 ## Out of scope

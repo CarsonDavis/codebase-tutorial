@@ -1,6 +1,6 @@
 import path from "node:path";
 import { notFound } from "next/navigation";
-import { loadTutorial } from "@/lib/tutorials";
+import { hasQuiz, loadTutorial } from "@/lib/tutorials";
 import { TutorialNav } from "@/components/TutorialNav";
 import type { ReactNode } from "react";
 
@@ -19,11 +19,17 @@ export default async function TutorialLayout({ children, params }: Props) {
   } catch {
     notFound();
   }
+  const quizAvailable = await hasQuiz(TUTORIALS_DIR, slug);
 
   return (
     <div className="mx-auto grid max-w-7xl grid-cols-[16rem_1fr] gap-8 px-6 py-10">
       <aside className="sticky top-10 self-start">
-        <TutorialNav slug={slug} components={tutorial.components} aux={tutorial.aux} />
+        <TutorialNav
+          slug={slug}
+          components={tutorial.components}
+          aux={tutorial.aux}
+          hasQuiz={quizAvailable}
+        />
       </aside>
       <div>{children}</div>
     </div>

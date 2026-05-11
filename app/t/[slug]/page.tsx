@@ -8,6 +8,7 @@ import {
   loadAux,
   loadGlossaryIndex,
   parseAuxRecords,
+  hasQuiz,
 } from "@/lib/tutorials";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownBody } from "@/components/MarkdownBody";
@@ -35,9 +36,10 @@ export default async function TutorialOverview({ params }: Props) {
   } catch {
     notFound();
   }
-  const [glossary, seamsAux] = await Promise.all([
+  const [glossary, seamsAux, quizAvailable] = await Promise.all([
     loadGlossaryIndex(TUTORIALS_DIR, slug),
     loadAux(TUTORIALS_DIR, slug, "seams"),
+    hasQuiz(TUTORIALS_DIR, slug),
   ]);
   const seams = seamsAux ? parseAuxRecords(seamsAux.body) : [];
 
@@ -93,6 +95,22 @@ export default async function TutorialOverview({ params }: Props) {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {quizAvailable && (
+          <section className="mt-12 border-t border-[var(--color-border)] pt-8">
+            <h2 className="text-xl font-semibold tracking-tight">Test yourself</h2>
+            <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+              Twelve big-picture questions on the architecture, decisions, and seams.
+              Each one has a review that explains why the answer is right.
+            </p>
+            <Link
+              href={`/t/${slug}/quiz/`}
+              className="mt-4 inline-flex items-center gap-2 rounded-md border border-[var(--color-accent)] bg-[var(--color-keyidea-bg)] px-4 py-2 text-sm font-medium text-[var(--color-fg)] transition-colors hover:border-[var(--color-fg)]"
+            >
+              Take the quiz →
+            </Link>
           </section>
         )}
 

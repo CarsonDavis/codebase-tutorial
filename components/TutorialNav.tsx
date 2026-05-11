@@ -8,9 +8,10 @@ interface Props {
   slug: string;
   components: Component[];
   aux?: AuxEntry[];
+  hasQuiz?: boolean;
 }
 
-export function TutorialNav({ slug, components, aux }: Props) {
+export function TutorialNav({ slug, components, aux, hasQuiz }: Props) {
   const pathname = usePathname();
   const overviewHref = `/t/${slug}/`;
 
@@ -74,6 +75,24 @@ export function TutorialNav({ slug, components, aux }: Props) {
                 </li>
               );
             })}
+          </ul>
+        </>
+      )}
+
+      {hasQuiz && (
+        <>
+          <div className="mt-6 border-t border-[var(--color-border)] pt-4 text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-muted)]">
+            Test yourself
+          </div>
+          <ul className="mt-2 space-y-2">
+            <li>
+              <Link
+                href={`/t/${slug}/quiz/`}
+                className={navClass(pathname === `/t/${slug}/quiz/`)}
+              >
+                Quiz
+              </Link>
+            </li>
           </ul>
         </>
       )}

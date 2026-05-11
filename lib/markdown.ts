@@ -46,6 +46,33 @@ const CALLOUT_LABELS: Record<CalloutType, string> = {
   SEAM: "Seam",
 };
 
+/**
+ * Render a short markdown string to HTML without the full pipeline (no callouts, no
+ * glossary auto-link, no shiki, no heading collection). Intended for quiz prompts,
+ * options, distractor notes, and review bodies — content that uses inline markdown
+ * (code spans, em/strong, links) and may or may not have paragraph structure.
+ *
+ * When `unwrapSingleParagraph` is true and the rendered output is a single `<p>…</p>`,
+ * the wrapper is stripped so the result can be inlined into any element.
+ */
+export async function renderInlineMarkdown(
+  source: string,
+  opts: { unwrapSingleParagraph?: boolean } = {},
+): Promise<string> {
+  const file = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeStringify)
+    .process(source.trim());
+  let html = String(file).trim();
+  if (opts.unwrapSingleParagraph) {
+    const m = /^<p>([\s\S]*)<\/p>\s*$/i.exec(html);
+    if (m && !/<p[\s>]/i.test(m[1])) html = m[1];
+  }
+  return html;
+}
+
 export async function renderMarkdown(
   body: string,
   ctx: RenderContext,

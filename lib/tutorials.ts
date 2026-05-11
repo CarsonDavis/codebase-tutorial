@@ -11,6 +11,10 @@ import type {
   AuxEntry,
   AuxId,
   AuxRecord,
+  Quiz,
+  QuizQuestion,
+  QuizOptionId,
+  QuizTopic,
 } from "./types";
 
 const AUX_IDS: AuxId[] = ["glossary", "characters", "decisions", "seams"];
@@ -146,6 +150,111 @@ export async function loadGlossaryIndex(
   }));
   items.sort((a, b) => b.term.length - a.term.length);
   return items;
+}
+
+/** Returns true if the tutorial has an `aux/quiz.yaml`. Used by the layout to decide
+ *  whether to show the quiz link in the sidebar. */
+export async function hasQuiz(rootDir: string, slug: string): Promise<boolean> {
+  try {
+    await fs.access(path.join(rootDir, slug, "aux", "quiz.yaml"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Loads and normalizes `aux/quiz.yaml`. Returns null if the file does not exist —
+ *  quizzes are optional and discovered by filesystem presence (not registered in
+ *  `tutorial.yaml`). */
+export async function loadQuiz(rootDir: string, slug: string): Promise<Quiz | null> {
+  const file = path.join(rootDir, slug, "aux", "quiz.yaml");
+  let text: string;
+  try {
+    text = await fs.readFile(file, "utf8");
+  } catch {
+    return null;
+  }
+  const raw = yaml.load(text) as Record<string, unknown>;
+  return normalizeQuiz(raw, slug);
+}
+
+const QUIZ_TOPICS: QuizTopic[] = [
+  "architecture",
+  "decisions",
+  "seams",
+  "interactions",
+  "tradeoffs",
+];
+const QUIZ_OPTION_IDS: QuizOptionId[] = ["a", "b", "c", "d"];
+
+function normalizeQuiz(raw: Record<string, unknown>, slug: string): Quiz {
+  const questionsRaw = (raw.questions as Array<Record<string, unknown>> | undefined) ?? [];
+  return {
+    slug,
+    title: String(raw.title ?? `${slug} quiz`),
+    summary: String(raw.summary ?? ""),
+    generatedAt: String(raw.generated_at ?? ""),
+    generatorVersion: raw.generator_version ? String(raw.generator_version) : undefined,
+    questions: questionsRaw.map(normalizeQuizQuestion),
+  };
+}
+
+function normalizeQuizQuestion(raw: Record<string, unknown>): QuizQuestion {
+  const topicRaw = String(raw.topic ?? "");
+  const topic: QuizTopic = (QUIZ_TOPICS as readonly string[]).includes(topicRaw)
+    ? (topicRaw as QuizTopic)
+    : "architecture";
+
+  const options = ((raw.options as Array<Record<string, unknown>> | undefined) ?? []).map(
+    (o) => ({
+      id: normalizeOptionId(o.id),
+      text: trimBlockScalar(String(o.text ?? "")),
+    }),
+  );
+
+  const answer = normalizeOptionId(raw.answer);
+
+  const notesRaw = (raw.distractor_notes as Record<string, unknown> | undefined) ?? {};
+  const distractorNotes: Record<QuizOptionId, string> = {
+    a: "",
+    b: "",
+    c: "",
+    d: "",
+  };
+  for (const oid of QUIZ_OPTION_IDS) {
+    if (notesRaw[oid] !== undefined) {
+      distractorNotes[oid] = trimBlockScalar(String(notesRaw[oid]));
+    }
+  }
+
+  const groundedInRaw = raw.grounded_in;
+  const groundedIn = Array.isArray(groundedInRaw)
+    ? groundedInRaw.map(String)
+    : undefined;
+
+  return {
+    id: String(raw.id ?? ""),
+    topic,
+    prompt: trimBlockScalar(String(raw.prompt ?? "")),
+    options,
+    answer,
+    review: trimBlockScalar(String(raw.review ?? "")),
+    distractorNotes,
+    groundedIn,
+  };
+}
+
+function normalizeOptionId(raw: unknown): QuizOptionId {
+  const s = String(raw ?? "").toLowerCase();
+  return (QUIZ_OPTION_IDS as readonly string[]).includes(s)
+    ? (s as QuizOptionId)
+    : "a";
+}
+
+function trimBlockScalar(s: string): string {
+  // YAML block scalars (`|`) preserve a trailing newline. Treat the value as a single
+  // logical text block for rendering purposes.
+  return s.replace(/\n+$/, "");
 }
 
 async function readFileOrThrow(file: string, label: string): Promise<string> {

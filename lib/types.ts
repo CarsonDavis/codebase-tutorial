@@ -78,3 +78,48 @@ export interface AuxRecord {
   /** Body markdown beneath the h2, up to the next h2 or end of file. */
   body: string;
 }
+
+export type QuizTopic = "architecture" | "decisions" | "seams" | "interactions" | "tradeoffs";
+export type QuizOptionId = "a" | "b" | "c" | "d";
+
+export interface QuizQuestion {
+  id: string;
+  topic: QuizTopic;
+  prompt: string;                                       // raw markdown
+  options: Array<{ id: QuizOptionId; text: string }>;
+  answer: QuizOptionId;
+  review: string;                                       // raw markdown
+  distractorNotes: Record<QuizOptionId, string>;        // raw markdown per option
+  groundedIn?: string[];
+}
+
+export interface Quiz {
+  slug: string;
+  title: string;
+  summary: string;
+  generatedAt: string;
+  generatorVersion?: string;
+  questions: QuizQuestion[];
+}
+
+/**
+ * The shape passed to the interactive client component — each markdown field has been
+ * pre-rendered to inline HTML at build time so the client never imports the markdown
+ * pipeline.
+ */
+export interface QuizRendered {
+  slug: string;
+  title: string;
+  summary: string;
+  questions: QuizQuestionRendered[];
+}
+
+export interface QuizQuestionRendered {
+  id: string;
+  topic: QuizTopic;
+  promptHtml: string;
+  options: Array<{ id: QuizOptionId; textHtml: string; noteHtml: string }>;
+  answer: QuizOptionId;
+  reviewHtml: string;
+  groundedIn?: string[];
+}
