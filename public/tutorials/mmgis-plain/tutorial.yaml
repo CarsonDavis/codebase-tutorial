@@ -1,0 +1,143 @@
+slug: mmgis-plain
+name: MMGIS (Plain English)
+source:
+  path: /Users/cdavis/github/MMGIS
+  url: https://github.com/NASA-AMMOS/MMGIS
+generated_at: 2026-05-12T00:00:00Z
+generator_version: plain-english-1
+
+summary: A plain-English, concept-first walkthrough of MMGIS — what the parts are, why they exist, and how they connect. No code samples, no file paths. Written for someone thinking about a high-level refactor (e.g. carving out a static, backend-free deployment mode).
+
+components:
+  - id: frontend-essence
+    title: Frontend (the map app)
+    summary: The thing users actually see — a 2D map, a 3D globe, an image viewer, plus tools that hang off the side panel. Loaded fresh in the browser every time someone visits the page.
+    type: subdivided
+    sub_sections:
+      - id: core-runtime
+        title: The map core
+        summary: The shared state and engines that drive the 2D map, 3D globe, and image viewer. The spine the rest of the app plugs into.
+      - id: tools
+        title: The tools panel
+        summary: The catalog of side-panel features users click into — drawing, measuring, layer controls, identification, analysis. Each one is its own self-contained module.
+      - id: ancillary-ui
+        title: Everything else around the map
+        summary: All the chrome — login, search, the scale bar, the right-click menu, modals, the landing page. Old-style imperative code wrapped around the map.
+      - id: mmgis-api
+        title: The public embed/plugin API
+        summary: A small, deliberate JavaScript surface that outside pages and plugin code are allowed to call. The only contract that lasts across versions.
+
+  - id: backend-api
+    title: Backend (the server)
+    summary: One Node process that hosts everything server-side — serves the SPA, exposes the data API, holds sessions and auth, pushes real-time updates, and proxies to optional Python services.
+    type: subdivided
+    sub_sections:
+      - id: server-bootstrap
+        title: How the server boots
+        summary: What has to happen — database ready, sessions wired, feature modules loaded — before the server starts answering requests.
+      - id: feature-modules
+        title: The feature modules
+        summary: A folder-per-feature pattern that the server discovers at boot. Datasets, drawing, mission config, link shortener, and so on, all share the same shape.
+      - id: auth-and-sessions
+        title: Logins, sessions, and tokens
+        summary: How humans sign in (cookie-backed sessions stored in the database) and how scripts authenticate (long-lived bearer tokens). Also covers why the first person to register becomes the super-admin.
+
+  - id: configure-spa
+    title: Configure (the admin app)
+    summary: A separate admin app at /configure for editing the mission's JSON configuration. Doesn't run the map, just edits the file that describes the map.
+    type: atomic
+
+  - id: build-and-bundling
+    title: Build & dev server
+    summary: How the frontend gets bundled into a browser-ready blob, and the quirks of running it in development (two ports, a code-generation step that runs before the bundler).
+    type: atomic
+
+  - id: adjacent-servers
+    title: The Python sidecar services
+    summary: Optional tile and catalog servers (TiTiler, STAC, tipg) that MMGIS proxies through. Best-of-breed Python code MMGIS chose not to reimplement.
+    type: atomic
+
+  - id: auxiliary-scripts
+    title: Offline data-prep scripts
+    summary: A toolbox of standalone scripts that turn raw mission data into the tiled, indexed assets MMGIS expects. Run by humans on a workstation, never at runtime.
+    type: atomic
+
+  - id: testing
+    title: Testing
+    summary: One test runner (Playwright) that covers both fast unit tests and full browser end-to-end tests. The same setup, just with or without a real server running.
+    type: atomic
+
+cross_refs:
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/tools
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/mmgis-api
+  - from: frontend-essence/core-runtime
+    to: frontend-essence/ancillary-ui
+  - from: frontend-essence/tools
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/tools
+    to: frontend-essence/mmgis-api
+  - from: frontend-essence/tools
+    to: configure-spa
+    note: Tool config schemas are rendered as forms in Configure
+  - from: frontend-essence/ancillary-ui
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/mmgis-api
+    to: frontend-essence/core-runtime
+  - from: frontend-essence/mmgis-api
+    to: frontend-essence/tools
+
+  - from: backend-api/server-bootstrap
+    to: backend-api/feature-modules
+  - from: backend-api/server-bootstrap
+    to: backend-api/auth-and-sessions
+  - from: backend-api/feature-modules
+    to: backend-api/server-bootstrap
+  - from: backend-api/feature-modules
+    to: backend-api/auth-and-sessions
+  - from: backend-api/feature-modules
+    to: adjacent-servers
+  - from: backend-api/auth-and-sessions
+    to: backend-api/server-bootstrap
+  - from: backend-api/auth-and-sessions
+    to: backend-api/feature-modules
+  - from: backend-api/auth-and-sessions
+    to: configure-spa
+
+  - from: configure-spa
+    to: backend-api/feature-modules
+  - from: configure-spa
+    to: backend-api/auth-and-sessions
+  - from: configure-spa
+    to: build-and-bundling
+  - from: build-and-bundling
+    to: frontend-essence/core-runtime
+  - from: build-and-bundling
+    to: frontend-essence/tools
+  - from: build-and-bundling
+    to: configure-spa
+  - from: adjacent-servers
+    to: backend-api/feature-modules
+  - from: adjacent-servers
+    to: backend-api/server-bootstrap
+  - from: auxiliary-scripts
+    to: backend-api/feature-modules
+  - from: auxiliary-scripts
+    to: adjacent-servers
+  - from: testing
+    to: backend-api/server-bootstrap
+
+aux:
+  - id: glossary
+    title: Glossary
+    summary: The terms MMGIS prose uses, defined in plain English.
+  - id: characters
+    title: Cast of characters
+    summary: The recurring named things in MMGIS, framed as actors with roles.
+  - id: decisions
+    title: Decisions
+    summary: The non-obvious choices behind the architecture, and why they matter.
+  - id: seams
+    title: Seams
+    summary: The boundaries between parts of the system — the places a refactor has to cross.

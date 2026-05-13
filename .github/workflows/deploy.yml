@@ -49,7 +49,7 @@ jobs:
         env:
           # Only this list of tutorials ships to production. example-repo is a
           # dev fixture used in tests and is intentionally excluded.
-          TUTORIAL_ALLOWLIST: mmgis,code-explainer
+          TUTORIAL_ALLOWLIST: mmgis,mmgis-plain
         run: npm run build
 
       # ── CDK deploy ────────────────────────────────────────────
