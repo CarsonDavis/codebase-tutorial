@@ -2,7 +2,7 @@
 id: intro
 title: MMGIS (plain English)
 summary: A concept-first walkthrough of MMGIS — what the pieces are, why they exist, and how a high-level refactor (e.g. a static, backend-free deployment) would have to touch them.
-key_idea: MMGIS is one server, one database, and three browser apps — held together by a shared mission configuration file. Strip out the server-only responsibilities (auth, persistence, real-time collaboration, admin editing) and you're left with a static map app.
+key_idea: MMGIS is one server, one database, and three browser apps — held together by a shared mission configuration file. Strip out the server-only responsibilities (auth, persistence, live admin sync, admin editing) and you're left with a static map app.
 seams_touched:
   - browser-backend
   - backend-postgres
@@ -24,7 +24,7 @@ The **server** (one Node.js process — a single running program that handles in
 1. Serves the browser apps as static files (HTML, JavaScript, CSS sent down to the browser).
 2. Holds the mission's data — layers, drawn features, user accounts — in a Postgres database (a long-running database program that stores and queries records).
 3. Exposes that data over an HTTP API (a set of URLs the browser can call to read or write data, getting JSON back).
-4. Pushes live updates (for collaborative drawing) over a WebSocket (a persistent two-way connection between browser and server, instead of one request-then-response at a time).
+4. Pushes live updates over a WebSocket (a persistent two-way connection between browser and server, instead of one request-then-response at a time): when an admin saves a mission-config change in the admin app, other admins viewing that mission see the new layers in place without a page reload.
 5. Optionally forwards certain requests to Python services that handle map tiles and catalogs. (Forwarding a request like this is called *proxying* — the server receives a request and passes it to a different service behind the scenes, then returns that service's answer.)
 
 The **three browser apps** are:
@@ -45,7 +45,7 @@ The **mission configuration** is a JSON blob in the database. Configure writes i
 
 **Map tile data** lives either on disk (served as static files by the Node server) or behind one of the Python tile services (served on demand from cloud-optimized GeoTIFFs).
 
-**User-drawn features** (annotations, traverse plans, etc.) live in Postgres and are pushed to other connected clients in real time via the WebSocket.
+**User-drawn features** (annotations, traverse plans, etc.) live in Postgres. Multiple users can edit the same drawing file at the same time, but they don't see each other's edits in real time — coordination happens through the shared database, so whoever saves last wins.
 
 **Authentication** is a cookie-based login for humans, plus long-lived bearer tokens for scripts. Both checked by the server on every request.
 
@@ -57,7 +57,7 @@ If you're thinking about something like a "static mode" deployment — a build t
 - **Configure** disappears (or stays alive only on the authoring deployment).
 - **The database** disappears.
 - **Auth and sessions** disappear.
-- **The WebSocket** and **collaborative drawing** disappear.
+- **The WebSocket** disappears — there's no admin app on a static deployment for it to fan changes out from. **Collaborative drawing** disappears too, simply because there's no backend to write the shared drawings to.
 - The **Python sidecar services** stay alive, but the static frontend points at them by external URL instead of going through the Node server's proxy.
 - The **offline toolbox** stays alive — it still produces the static tiles and assets.
 

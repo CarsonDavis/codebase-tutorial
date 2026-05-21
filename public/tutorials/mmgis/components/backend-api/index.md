@@ -1,7 +1,7 @@
 ---
 id: backend-api
 title: Backend (API server)
-summary: Express 4 server that hosts the SPA, mounts a tree of feature modules under /api, talks to Postgres/PostGIS via Sequelize, and runs a WebSocket server for real-time collaboration.
+summary: Express 4 server that hosts the SPA, mounts a tree of feature modules under /api, talks to Postgres/PostGIS via Sequelize, and runs a WebSocket that fans out mission-config changes to open admin clients.
 key_idea: One Express process composes a tree of feature modules with identical models/routes/setup.js shape, each receiving a shared "s" toolkit during a synced/init/started lifecycle.
 seams_touched:
   - browser-backend
@@ -14,7 +14,7 @@ The backend is a single Node 20 process started by `npm start`. It is responsibl
 serving the [Essence](../frontend-essence/index.md) SPA, hosting the
 [Configure](../configure-spa/index.md) admin app, exposing the JSON API under `/api`,
 proxying to optional [adjacent Python services](../adjacent-servers/index.md), and
-upgrading certain connections to a WebSocket for real-time collaboration. The code
+upgrading certain connections to a WebSocket that fans out mission-config changes to open admin clients. The code
 lives in two top-level directories: `scripts/` (process entry points) and `API/`
 (Express composition plus the feature-module tree).
 
@@ -40,8 +40,9 @@ where session/auth state comes from.
 
 - **[Feature modules under API/Backend](./feature-modules.md)** — the canonical
   module shape (`setupTemplate.js`), and a guided tour of the modules that matter:
-  Datasets and Geodatasets (vector data + PostGIS spatial queries), Draw (real-time
-  drawing with WS push), Config (mission/layer config CRUD that powers Configure),
+  Datasets and Geodatasets (vector data + PostGIS spatial queries), Draw (user-drawn
+  features, multi-user via shared Postgres rows), Config (mission/layer config CRUD that
+  powers Configure and is the lone publisher on the WebSocket),
   Stac (proxy to the adjacent STAC service), Webhooks, Shortener, GeneralOptions,
   Utils. Auth modules (Accounts, Users, LongTermToken) follow the same shape but are
   covered on the next page.

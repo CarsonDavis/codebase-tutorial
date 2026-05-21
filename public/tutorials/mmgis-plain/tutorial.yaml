@@ -29,7 +29,7 @@ components:
 
   - id: backend-api
     title: Backend (the server)
-    summary: One Node process that hosts everything server-side — serves the SPA, exposes the data API, holds sessions and auth, pushes real-time updates, and proxies to optional Python services.
+    summary: One Node process that hosts everything server-side — serves the SPA, exposes the data API, holds sessions and auth, pushes live admin-sync notifications, and proxies to optional Python services.
     type: subdivided
     sub_sections:
       - id: server-bootstrap

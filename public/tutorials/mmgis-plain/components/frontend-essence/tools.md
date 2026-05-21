@@ -49,7 +49,7 @@ This is what makes MMGIS extensible without touching the central code: an integr
 
 The built-in tools cluster into a few groups:
 
-- **Editing.** The drawing tool is by far the heaviest. It supports drawing shapes, editing them, undo/redo, file management, templating, and pushing real-time edits over the WebSocket to other connected clients. Also: a tool for measuring distances and elevation profiles.
+- **Editing.** The drawing tool is by far the heaviest. It supports drawing shapes, editing them, undo/redo, file management, templating, and publishing finished drawings as a feature layer. Multiple users can edit the same drawing file at once, but they don't see each other's edits in real time — coordination happens through the shared database, with whoever saves last winning. Also: a tool for measuring distances and elevation profiles.
 - **Inspection.** Identifying which feature is under the cursor; rendering a feature's detail page; controlling which layers are visible and how transparent they are.
 - **Analysis.** Travel-time polygons, line-of-sight calculations, terrain cross-sections, mineral-composition plots.
 - **Time-aware.** A tool that animates time-tagged layers through their range.
@@ -59,6 +59,6 @@ The tool controller also publishes tool-change events on the public embed API's 
 
 ## What this means for a static refactor
 
-The drawing tool is the most server-coupled of the built-ins — it persists features to the database and broadcasts edits over the WebSocket. In a static deployment, that tool either disappears entirely, or runs in a read-only mode where it can display pre-baked drawn features but not save new ones.
+The drawing tool is the most server-coupled of the built-ins — every shape is persisted to the database, versioned, and (optionally) fired off to webhooks. In a static deployment, that tool either disappears entirely, or runs in a read-only mode where it can display pre-baked drawn features but not save new ones.
 
 The other tools are mostly fine. Most of them just read the layers from the shared mission state and draw on the map; they don't need a backend. The configuration tool (Configure renders schemas as forms) is the only other server-coupled piece — and Configure itself isn't part of the static build at all, so this is academic.

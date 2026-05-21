@@ -62,7 +62,7 @@ questions:
       a: |
         This is the seam. Knowing it is one-way (Configure writes, Essence reads) and database-mediated saves hours of frontend debugging.
       b: |
-        There is a WebSocket, but it's for Draw collaboration and presence — config flows through the database, not the socket.
+        Configure does broadcast config saves over the WebSocket and Essence does apply them in-memory at runtime — but the primary mechanism is still the database read at boot, and updates aren't persisted client-side. (a) names the actual seam; the WS-driven live-refresh rides on top of it.
       c: |
         The plugin-drop directory is a separate seam for *code*, not data. It does not carry mission config.
       d: |
@@ -247,7 +247,7 @@ questions:
           An HTTP proxy translating between Essence and the backend feature modules.
       - id: d
         text: |
-          A WebSocket message router for real-time Draw collaboration.
+          A backend WebSocket message router for fanning out mission-config changes to connected clients.
     answer: a
     review: |
       `mmgisAPI` is a diplomat in two directions at once. Outward, it's the stable contract embedders depend on — anything not on it is fair game to change. Inward, the same object hosts the mitt event/request bus tools use to talk to each other without import cycles. Two surfaces, one file — which is why edits here ripple in both directions and need care.
@@ -259,7 +259,7 @@ questions:
       c: |
         The HTTP boundary is the Express backend, not `mmgisAPI`.
       d: |
-        The WebSocket lives in the backend at `API/websocket.js`; `mmgisAPI` is a frontend-only object.
+        The WebSocket does fan out mission-config changes from the backend, but it lives in `API/websocket.js`; `mmgisAPI` is a frontend-only object.
     grounded_in:
       - frontend-essence/mmgis-api
 
@@ -303,13 +303,13 @@ questions:
     options:
       - id: a
         text: |
-          Sharing the HTTP server inherits its TLS, hostname, and firewall posture; broadcast was sufficient because the only consumers (Draw collaboration, presence) filter on the client and the load profile didn't justify per-mission rooms.
+          Sharing the HTTP server inherits its TLS, hostname, and firewall posture; broadcast was sufficient because the consumers (other Configure admins on the same mission, the main Essence client) already filter by mission name on receive and the load profile didn't justify per-mission rooms.
       - id: b
         text: |
           A separate WebSocket server on its own port would have required a separate TLS cert chain MMGIS does not maintain.
       - id: c
         text: |
-          Broadcast is required for Draw consistency — per-room messaging would create split-brain editing conflicts.
+          Broadcast is required for consistency across all admin clients — per-room messaging would create split-brain when two admins edit the same mission's config.
       - id: d
         text: |
           The shape is a relic; the codebase is mid-migration to a Kafka-based pub/sub system.
@@ -322,7 +322,7 @@ questions:
       b: |
         TLS termination is a deployment concern; nothing in the codebase forbids a separate cert chain.
       c: |
-        Per-room messaging would not cause split-brain — Draw's consistency comes from the database, not the socket.
+        Per-room messaging would not cause split-brain — the source of truth is Postgres. The WebSocket only delivers "this mission's config changed" notifications; the consumers re-fetch from the database after.
       d: |
         There is no Kafka migration in flight in this codebase.
     grounded_in:

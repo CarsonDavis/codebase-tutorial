@@ -10,7 +10,8 @@ means crossing one or more of them, and most footguns live right on the line.
 
 ## browser-backend
 Browser to Express. Carries the SPA bundle, JSON over `/api/*`, and a WebSocket upgrade
-for [Draw](../components/backend-api/feature-modules.md) and presence. Auth is a
+that fans out mission-config changes from
+[Config](../components/backend-api/feature-modules.md) to open admin clients. Auth is a
 session cookie (`MMGISSession`) for humans; long-term tokens travel as
 `Authorization: Bearer` headers. CORS is on, but in production the SPA and API share an
 origin, so cross-origin only matters for iframe embedders that drive the

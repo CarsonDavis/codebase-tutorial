@@ -23,7 +23,7 @@ boxes you need before you read any single file.
 
 The center of the system is a Node 20 + Express server (the [backend
 API](./components/backend-api/index.md)) that owns a Postgres/PostGIS database via
-Sequelize and runs a WebSocket for real-time collaboration. It serves three browser
+Sequelize and runs a WebSocket that fans out mission-config changes to open admin clients. It serves three browser
 applications: the main mapping app
 [Essence](./components/frontend-essence/index.md), a separate
 [Configure](./components/configure-spa/index.md) admin SPA mounted at `/configure`,

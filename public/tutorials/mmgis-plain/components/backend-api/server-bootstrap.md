@@ -77,7 +77,7 @@ A feature module's startup hook is responsible for composing the right guards in
 
 The server doesn't open a separate port for the WebSocket. Instead, it grabs the existing HTTP server's "upgrade" event — the moment when a browser asks to switch from a normal HTTP connection to a WebSocket — and handles it inline. That means the WebSocket inherits the same hostname, the same TLS certificate, and the same firewall posture as the rest of the server. Conceptually simpler, fewer ports to think about.
 
-The default behavior is dumb broadcast: every message a client sends gets re-sent to every other connected client. The drawing tool uses this to push edits in real time; clients filter for what they care about.
+The default behavior is dumb broadcast: every message a client sends gets re-sent to every other connected client. In practice there's only one publisher: the admin app sends a message whenever an admin saves a mission-config change. Recipients filter by mission name and react — other admins editing that same config in the admin app see a "this changed, you must refresh" warning, and any open main map clients on that mission refresh their layers in place without a page reload.
 
 ## What this means for a static refactor
 

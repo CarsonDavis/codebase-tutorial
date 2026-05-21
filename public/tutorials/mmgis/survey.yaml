@@ -19,7 +19,7 @@ notes: |
       "Essence" lives in `src/essence/` and uses jQuery-style imperative code plus React
       16 islands. Mapping libs: Leaflet (2D), Cesium (3D), plus Mapbox-GL/MapLibre/Deck.gl.
     - Configure SPA in `configure/` is a separate React app with its own webpack pipeline.
-    - Real-time collaboration over a `ws` WebSocket server (`API/websocket.js`).
+    - A `ws` WebSocket server (`API/websocket.js`) that fans out mission-config changes from Configure to open admin clients.
     - Plugin system: drop dirs matching `*Private-Tools*` / `*Plugin-Tools*` (frontend) or
       `*Private-Backend*` / `*Plugin-Backend*` (backend); they are gitignored and picked
       up by the build/start scripts.
@@ -96,7 +96,7 @@ components:
     title: Backend (API server)
     summary: Express 4 server that serves the SPA, mounts a tree of feature modules
       under `/api`, talks to Postgres/PostGIS through Sequelize, and runs a WebSocket
-      server for real-time collaboration.
+      server that fans out mission-config changes to open admin clients.
     type: subdivided
     focus_paths:
       - scripts/server.js
@@ -109,7 +109,7 @@ components:
         summary: How the process starts — `init-db.js` waits on Postgres and runs
           migrations, `server.js` configures Express (helmet, sessions, OAS generator,
           static SPA serving), `middleware.js` provides per-route auth/permission
-          guards, and `API/websocket.js` upgrades to WS for collaboration.
+          guards, and `API/websocket.js` upgrades to WS for fanning out mission-config changes.
         focus_paths:
           - scripts/server.js
           - scripts/init-db.js
@@ -124,8 +124,8 @@ components:
         title: Feature modules under API/Backend
         summary: The repeating shape every backend feature follows — `models/`,
           `routes/`, `setup.js` — and a tour of the modules that matter most:
-          Datasets (vector data CRUD + PostGIS queries), Geodatasets, Draw (real-time
-          drawing), Config, Stac, Webhooks, Shortener.
+          Datasets (vector data CRUD + PostGIS queries), Geodatasets, Draw (user-drawn
+          features, multi-user via shared Postgres rows), Config, Stac, Webhooks, Shortener.
         focus_paths:
           - API/Backend/Datasets
           - API/Backend/Geodatasets

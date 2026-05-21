@@ -55,8 +55,9 @@ The directory structure mirrors a typical CRA app:
   (every call lines up with a route under `/api/configure/*`,
   `/api/datasets/*`, `/api/users/*`, etc.). `Maker.js` is the metaconfig
   renderer — it walks a JSON schema and produces the actual form widgets.
-  `Websocket.js` connects to the backend's collaboration WS so multiple
-  admins editing the same mission stay in sync.
+  `Websocket.js` connects to the backend's WS so two admins editing the
+  same mission's config can't silently clobber each other — a save by one
+  surfaces a "this config changed, refresh" warning in the other.
 - `pages/` — top-level admin sections: `APIs`, `APITokens`, `Datasets`,
   `GeoDatasets`, `GeneralOptions`, `STAC`, `Users`, `WebHooks`. Each is a
   self-contained page mounted by `core/Configure.js`.

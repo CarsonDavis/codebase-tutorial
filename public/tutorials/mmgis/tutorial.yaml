@@ -39,7 +39,7 @@ components:
     title: Backend (API server)
     summary: Express 4 server that serves the SPA, mounts a tree of feature modules
       under /api, talks to Postgres/PostGIS through Sequelize, and runs a WebSocket
-      server for real-time collaboration.
+      server that fans out mission-config changes to open admin clients.
     type: subdivided
     sub_sections:
       - id: server-bootstrap

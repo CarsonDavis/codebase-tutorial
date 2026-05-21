@@ -67,9 +67,10 @@ read in tracked source.
 `API/websocket.js` does not bind its own port — it attaches to the existing HTTP
 server's `upgrade` event so it inherits the same TLS, the same hostname, and the
 same firewall posture. The default behavior is "broadcast every received message to
-every open client," because the only consumers (Draw collaboration, presence) are
-already filtering messages on the client. A per-mission room model was not worth the
-complexity for the load profile.
+every open client," because the only event in flight is a Config-driven
+mission-config save and the consumers (other Configure admins, open Essence clients)
+already filter by mission name on receive. A per-mission room model was not worth
+the complexity for the load profile.
 
 ## Why is the spec-kit retroactive?
 `/specs` and `/.specify` were added after most of MMGIS already existed. The intent

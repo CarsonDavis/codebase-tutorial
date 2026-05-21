@@ -7,7 +7,7 @@ summary: The boundaries where MMGIS changes hands. These are the load-bearing ed
 A "seam" is a boundary where one part of the system stops knowing how the other part works. These are the joints in MMGIS. If you're thinking about a deep refactor (e.g. a static-mode deployment), most of the interesting decisions land at one of these seams.
 
 ## Browser ↔ Server
-The frontend talks to the server in two ways: regular HTTP requests for JSON data, and a single WebSocket for live drawing updates. Identity is carried by a session cookie for humans and a bearer token for scripts.
+The frontend talks to the server in two ways: regular HTTP requests for JSON data, and a single WebSocket the server uses to notify other admins when someone saves a mission-config change. Identity is carried by a session cookie for humans and a bearer token for scripts.
 
 **For a static refactor:** this seam mostly disappears. The frontend stops making API calls because there's nothing answering them. Anything the frontend currently fetches has to be baked into a static file at build time instead.
 

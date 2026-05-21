@@ -1,7 +1,7 @@
 ---
 id: backend-api
 title: Backend (the server)
-summary: One Node.js process that hosts the browser apps, exposes the data API, handles login, and pushes real-time updates. The piece that disappears in a static deployment.
+summary: One Node.js process that hosts the browser apps, exposes the data API, handles login, and pushes live admin-sync notifications. The piece that disappears in a static deployment.
 key_idea: The backend is a single Express server (a popular Node.js framework for building web servers) that gets composed at startup out of many small, similarly-shaped "feature modules." Every feature follows the same folder shape and gets handed the same toolkit of utilities.
 seams_touched:
   - browser-backend
@@ -16,7 +16,7 @@ The backend is a single Node.js server. It's responsible for:
 - Serving the admin browser app (also as static files, also from the same server, just at a different URL).
 - Exposing an HTTP API under `/api/...` for everything data-related.
 - Holding sessions and validating logins.
-- Pushing real-time drawing updates over a WebSocket.
+- Pushing live notifications over a WebSocket when an admin saves a mission-config change, so other admins viewing that mission see the update without a page refresh.
 - Forwarding certain requests through to optional Python services.
 
 The single most useful shape to hold in your head: **every backend feature has the same folder shape, and they all get plugged in the same way at startup.**

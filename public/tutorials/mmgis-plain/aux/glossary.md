@@ -32,7 +32,7 @@ A browser app that loads once and then handles navigation and updates inside the
 A set of URLs the browser can call to read or write data. The browser sends a request (usually for JSON data), the server replies. Most of the calls Essence makes to the server are to its API.
 
 ## WebSocket
-A persistent two-way connection between browser and server. Unlike a normal HTTP request, the connection stays open, and either side can send messages at any time. MMGIS uses one WebSocket to broadcast drawing edits to everyone else who has the same mission open.
+A persistent two-way connection between browser and server. Unlike a normal HTTP request, the connection stays open, and either side can send messages at any time. MMGIS uses one WebSocket to notify other admins when someone saves a mission-config change — other admins editing that config see a "this changed, refresh" warning, and any open main map clients on that mission refresh their layers in place.
 
 ## Session
 The server's record of "this browser is logged in as this user, until the session expires or they log out." Implemented as a small random ID that the browser stores in a cookie and sends back with every request, with the actual session data living server-side in a database table.
