@@ -49,7 +49,7 @@ This is what makes MMGIS extensible without touching the central code: an integr
 
 The built-in tools cluster into a few groups:
 
-- **Editing.** The drawing tool is by far the heaviest. It supports drawing shapes, editing them, undo/redo, file management, templating, and publishing finished drawings as a feature layer. Multiple users can edit the same drawing file at once, but they don't see each other's edits in real time — coordination happens through the shared database, with whoever saves last winning. Also: a tool for measuring distances and elevation profiles.
+- **Editing.** The drawing tool is by far the heaviest. It supports drawing shapes, editing them, undo/redo, file management, templating, and publishing finished drawings as a feature layer. Also: a tool for measuring distances and elevation profiles.
 - **Inspection.** Identifying which feature is under the cursor; rendering a feature's detail page; controlling which layers are visible and how transparent they are.
 - **Analysis.** Travel-time polygons, line-of-sight calculations, terrain cross-sections, mineral-composition plots.
 - **Time-aware.** A tool that animates time-tagged layers through their range.

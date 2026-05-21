@@ -45,7 +45,7 @@ The **mission configuration** is a JSON blob in the database. Configure writes i
 
 **Map tile data** lives either on disk (served as static files by the Node server) or behind one of the Python tile services (served on demand from cloud-optimized GeoTIFFs).
 
-**User-drawn features** (annotations, traverse plans, etc.) live in Postgres. Multiple users can edit the same drawing file at the same time, but they don't see each other's edits in real time — coordination happens through the shared database, so whoever saves last wins.
+**User-drawn features** (annotations, traverse plans, etc.) live in Postgres.
 
 **Authentication** is a cookie-based login for humans, plus long-lived bearer tokens for scripts. Both checked by the server on every request.
 
@@ -57,7 +57,7 @@ If you're thinking about something like a "static mode" deployment — a build t
 - **Configure** disappears (or stays alive only on the authoring deployment).
 - **The database** disappears.
 - **Auth and sessions** disappear.
-- **The WebSocket** disappears — there's no admin app on a static deployment for it to fan changes out from. **Collaborative drawing** disappears too, simply because there's no backend to write the shared drawings to.
+- **The WebSocket** disappears — there's no admin app on a static deployment for it to fan changes out from. **The drawing tool** disappears too, since there's no backend to save drawings to.
 - The **Python sidecar services** stay alive, but the static frontend points at them by external URL instead of going through the Node server's proxy.
 - The **offline toolbox** stays alive — it still produces the static tiles and assets.
 

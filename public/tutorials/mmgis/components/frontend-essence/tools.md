@@ -91,10 +91,8 @@ mission admins can configure the tool without touching code.
 The shipped tools cluster into a few groups:
 
 - **Map editing.** `Draw` is the heaviest — sub-modules for drawing, editing,
-  history, file management, templating, and publishing. Concurrent edits
-  coordinate through shared Postgres rows (`user_features`) with
-  last-write-wins; there is no real-time sync. `Measure` does distance +
-  elevation profiling against configurable DEMs.
+  history, file management, templating, and publishing. `Measure` does
+  distance + elevation profiling against configurable DEMs.
 - **Inspection.** `Identifier` queries features under the cursor;
   `Info` renders feature detail using the shared `Kinds` rendering registry;
   `Layers` is the layer tree and visibility/opacity controls.

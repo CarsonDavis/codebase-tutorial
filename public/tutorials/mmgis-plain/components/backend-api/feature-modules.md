@@ -47,7 +47,7 @@ The geographic sibling of Datasets. The same idea, but the rows are points/lines
 
 ### Drawing
 
-The user-drawn-features system. Users draw shapes on the map; the shapes are stored in the database and versioned. Multiple users can edit the same drawing file at once, but they don't see each other's edits in real time — coordination happens through the shared database, with whoever saves last winning. This is the most server-heavy feature: it owns multiple database tables, a file-history concept, an aggregation system, and HTTP webhooks that fire on changes.
+The user-drawn-features system. Users draw shapes on the map; the shapes are stored in the database and versioned. Multiple users can edit the same drawing file at once — the database is the only point of coordination, so whoever saves last wins. This is the most server-heavy feature: it owns multiple database tables, a file-history concept, an aggregation system, and HTTP webhooks that fire on changes.
 
 **Static refactor**: This feature can't exist in a static deployment in its current form. Either it's removed entirely, or it operates in a read-only mode where pre-existing drawn features are baked in but no new ones can be saved.
 
